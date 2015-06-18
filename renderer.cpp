@@ -89,8 +89,8 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, float* intensities) {
     Vec2i thresh = bbmin;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 2; ++j) {
-            bbmin.raw[j] = std::max(0, std::min(bbmin.raw[j], coords[i].raw[j]));
-            bbmax.raw[j] = std::min(thresh.raw[j], std::max(bbmax.raw[j], coords[i].raw[j]));
+            bbmin[j] = std::max(0, std::min(bbmin[j], coords[i][j]));
+            bbmax[j] = std::min(thresh[j], std::max(bbmax[j], coords[i][j]));
         }
     }
     Vec3i p;
@@ -108,10 +108,10 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, float* intensities) {
             float z = 0, intensity = 0;
             Vec2f t_coord(0, 0);
             for (int i = 0; i < 3; ++i) {
-                assert(0 <= bar.raw[i] && bar.raw[i] <= 1);
-                z += coords[i].z * bar.raw[i];
-                intensity += intensities[i] * bar.raw[i];
-                t_coord = t_coord + t_coords[i] * bar.raw[i];
+                assert(0 <= bar[i] && bar[i] <= 1);
+                z += coords[i].z * bar[i];
+                intensity += intensities[i] * bar[i];
+                t_coord += t_coords[i] * bar[i];
             }
             p.z = z;
             QRgb color = texture.pixel(texture.width() * (1.0 - t_coord.x), texture.height() * (1.0 - t_coord.y));

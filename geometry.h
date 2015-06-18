@@ -16,16 +16,33 @@ struct Vec2 {
     Vec2() : x(0), y(0) {}
     Vec2(T x, T y) : x(x), y(y) {}
 
+    inline const T& operator[](size_t i) const {
+        return raw[i];
+    }
+    inline T& operator[](size_t i) {
+        return raw[i];
+    }
     inline Vec2<T> operator+(const Vec2<T> &v) const {
         return Vec2<T>(x + v.x, y + v.y); 
+    }
+    inline const Vec2<T>& operator+=(const Vec2<T> &v) {
+        *this = *this + v;
+        return *this;
     }
     inline Vec2<T> operator-(const Vec2<T> &v) const {
         return Vec2<T>(x - v.x, y - v.y); 
     }
+    inline const Vec2<T>& operator-=(const Vec2<T> &v) {
+        *this = *this - v;
+        return *this;
+    }
     inline Vec2<T> operator*(float c) const { 
         return Vec2<T>(x * c, y * c); 
     }
-    friend std::ostream& operator<<(std::ostream& s, Vec2<T>& v) {
+    friend Vec2<T> operator*(float c, const Vec2<T> &v) {
+        return Vec2<T>(v.x * c, v.y * c);
+    }
+    friend std::ostream& operator<<(std::ostream& s, const Vec2<T>& v) {
         s << "(" << v.x << ", " << v.y << ")\n";
         return s;
     }
@@ -62,14 +79,31 @@ struct Vec3 {
         return *this;
     }
 
+    inline const T& operator[](size_t i) const {
+        return raw[i];
+    }
+    inline T& operator[](size_t i) {
+        return raw[i];
+    }
     inline Vec3<T> operator+(const Vec3<T> &v) const { 
         return Vec3<T>(x + v.x, y + v.y, z + v.z);
+    }
+    inline const Vec3<T>& operator+=(const Vec3<T> &v) {
+        *this = *this + v;
+        return *this;
     }
     inline Vec3<T> operator-(const Vec3<T> &v) const { 
         return Vec3<T>(x - v.x, y - v.y, z - v.z); 
     }
+    inline const Vec3<T>& operator-=(const Vec3<T> &v) {
+        *this = *this - v;
+        return *this;
+    }
     inline Vec3<T> operator*(float c) const { 
         return Vec3<T>(x * c, y * c, z * c); 
+    }
+    friend Vec3<T> operator*(float c, const Vec3<T> &v) {
+        return Vec3<T>(v.x * c, v.y * c, v.z * c);
     }
     inline Vec3<T> operator^(const Vec3<T> &v) const { 
         return Vec3<T>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); 
