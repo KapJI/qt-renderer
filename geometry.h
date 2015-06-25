@@ -1,130 +1,142 @@
 #pragma once
 
 #include <cmath>
+#include <cassert>
 
-template <class T> 
-struct Vec2 {
-    union {
-        struct {
-            T u, v;
-        };
-        struct {
-            T x, y;
-        };
-        T raw[2];
-    };
-    Vec2() : x(0), y(0) {}
-    Vec2(T x, T y) : x(x), y(y) {}
+template<size_t DIM, typename T>
+class vec {
+public:
+    vec() {
+        for (size_t i = DIM; i--; raw[i] = T());
+    }
 
-    inline const T& operator[](size_t i) const {
+    T& operator[](size_t i) {
+        assert(i < DIM);
         return raw[i];
     }
-    inline T& operator[](size_t i) {
+
+    const T& operator[](size_t i) const {
+        assert(i < DIM);
         return raw[i];
     }
-    inline Vec2<T> operator+(const Vec2<T> &v) const {
-        return Vec2<T>(x + v.x, y + v.y); 
-    }
-    inline const Vec2<T>& operator+=(const Vec2<T> &v) {
-        *this = *this + v;
-        return *this;
-    }
-    inline Vec2<T> operator-(const Vec2<T> &v) const {
-        return Vec2<T>(x - v.x, y - v.y); 
-    }
-    inline const Vec2<T>& operator-=(const Vec2<T> &v) {
-        *this = *this - v;
-        return *this;
-    }
-    inline Vec2<T> operator*(float c) const { 
-        return Vec2<T>(x * c, y * c); 
-    }
-    friend Vec2<T> operator*(float c, const Vec2<T> &v) {
-        return Vec2<T>(v.x * c, v.y * c);
-    }
-    friend std::ostream& operator<<(std::ostream& s, const Vec2<T>& v) {
-        s << "(" << v.x << ", " << v.y << ")\n";
-        return s;
-    }
+private:
+    T raw[DIM];
 };
 
-template <class T> 
-struct Vec3 {
-    union {
-        struct {
-            T x, y, z;
-        };
-        struct {
-            T ivert, iuv, inorm;
-        };
-        T raw[3];
-    };
-    
-    Vec3<T>() : x(T()), y(T()), z(T()) {}
-    
-    Vec3<T>(T x, T y, T z) : x(x), y(y), z(z) {}
-    
-    template <class U> 
-    Vec3<T>(const Vec3<U> &v) {
-        *this = v;
+template<typename T>
+class vec<2, T> {
+public:
+    vec(): x(), y() {}
+
+    vec(T x, T y): x(x), y(y) {}
+
+    T& operator[](size_t i) {
+        assert(i < 2);
+        return i == 0 ? x : y;
     }
 
-    template <class U>
-    Vec3<T>& operator=(const Vec3<U> &v) {
-        if ((void*)this != (void*)&v) {
-            x = v.x;
-            y = v.y;
-            z = v.z;
-        }
-        return *this;
+    const T& operator[](size_t i) const {
+        assert(i < 2);
+        return i == 0 ? x : y;
+    }
+    T x, y; 
+};
+
+template<typename T>
+class vec<3, T> {
+public:
+    vec(): x(), y(), z() {}
+
+    vec(T x, T y, T z): x(x), y(y), z(z) {}
+
+    T& operator[](size_t i) {
+        assert(i < 3);
+        return i == 0 ? x : (i == 1 ? y : z);
     }
 
-    inline const T& operator[](size_t i) const {
-        return raw[i];
+    const T& operator[](size_t i) const {
+        assert(i < 3);
+        return i == 0 ? x : (i == 1 ? y : z);
     }
-    inline T& operator[](size_t i) {
-        return raw[i];
-    }
-    inline Vec3<T> operator+(const Vec3<T> &v) const { 
-        return Vec3<T>(x + v.x, y + v.y, z + v.z);
-    }
-    inline const Vec3<T>& operator+=(const Vec3<T> &v) {
-        *this = *this + v;
-        return *this;
-    }
-    inline Vec3<T> operator-(const Vec3<T> &v) const { 
-        return Vec3<T>(x - v.x, y - v.y, z - v.z); 
-    }
-    inline const Vec3<T>& operator-=(const Vec3<T> &v) {
-        *this = *this - v;
-        return *this;
-    }
-    inline Vec3<T> operator*(float c) const { 
-        return Vec3<T>(x * c, y * c, z * c); 
-    }
-    friend Vec3<T> operator*(float c, const Vec3<T> &v) {
-        return Vec3<T>(v.x * c, v.y * c, v.z * c);
-    }
-    inline Vec3<T> operator^(const Vec3<T> &v) const { 
-        return Vec3<T>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); 
-    }
-    inline T operator*(const Vec3<T> &v) const {
-        return x * v.x + y * v.y + z * v.z; 
-    }
+
     float len() const { 
         return std::sqrt(x * x + y * y + z * z); 
     }
-    Vec3<T>& normalize(T l=1) { 
+
+    vec<3,T>& normalize(T l=1) { 
         *this = (*this) * (l / len()); 
         return *this; 
     }
-    friend std::ostream& operator<<(std::ostream& s, const Vec3<T>& v) {
-        s << "(" << v.x << ", " << v.y << ", " << v.z << ")\n";
-        return s;       
+    
+    inline vec<3, T> operator^(const vec<3, T> &v) const { 
+        return vec<3, T>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); 
     }
+
+    T x, y, z; 
 };
 
-typedef Vec2<float> Vec2f;
-typedef Vec2<int>   Vec2i;
-typedef Vec3<float> Vec3f;
-typedef Vec3<int>   Vec3i;
+template<size_t DIM, typename T>
+T operator*(const vec<DIM, T>& a, const vec<DIM, T> &b) {
+    T res = T();
+    for (size_t i = DIM; i--; res += a[i] * b[i]);
+    return res;
+}
+
+template<size_t DIM, typename T>
+vec<DIM, T> operator+(vec<DIM, T> a, const vec<DIM, T> &b) {
+    for (size_t i = DIM; i--; a[i] += b[i]);
+    return a;
+}
+
+template<size_t DIM, typename T>
+vec<DIM, T> operator-(vec<DIM, T> a, const vec<DIM, T> &b) {
+    for (size_t i = DIM; i--; a[i] -= b[i]);
+    return a;
+}
+
+template<size_t DIM, typename T, typename U>
+vec<DIM, T> operator*(vec<DIM, T> a, const U& factor) {
+    for (size_t i = DIM; i--; a[i] *= factor);
+    return a;
+}
+
+template<size_t DIM, typename T, typename U>
+vec<DIM, T> operator*(const U& factor, const vec<DIM, T> &a) {
+    return a * factor;
+}
+
+template<size_t DIM, typename T>
+vec<DIM, T>& operator+=(vec<DIM, T> &a, const vec<DIM, T> &b) {
+    a = a + b;
+    return a;
+}
+
+template<size_t DIM, typename T>
+vec<DIM, T>& operator-=(vec<DIM, T> &a, const vec<DIM, T> &b) {
+    a = a - b;
+    return a;
+}
+
+template<size_t DIM, typename T, typename U>
+vec<DIM, T>& operator*=(vec<DIM, T> &a, const U& factor) {
+    a = a * factor;
+    return a;
+}
+
+template<size_t DIM, typename T>
+std::ostream& operator<<(std::ostream& s, const vec<DIM, T>& v) {
+    s << "(";
+    for (size_t i = 0; i < DIM; ++i) {
+        s << v[i];
+        if (i + 1 < DIM) {
+            s << ", ";
+        }
+    }
+    s << ")\n";
+    return s;
+}
+
+using Vec2i = vec<2, int>;
+using Vec2f = vec<2, float>;
+using Vec3i = vec<3, int>;
+using Vec3f = vec<3, float>;

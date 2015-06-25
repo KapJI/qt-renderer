@@ -22,16 +22,16 @@ Model::Model(const char *filename) {
             iss >> trash;
             Vec3f v;
             for (int i = 0; i < 3; ++i) {
-                iss >> v.raw[i];
-                min_.raw[i] = std::min(min_.raw[i], v.raw[i]);
-                max_.raw[i] = std::max(max_.raw[i], v.raw[i]);
+                iss >> v[i];
+                min_[i] = std::min(min_[i], v[i]);
+                max_[i] = std::max(max_[i], v[i]);
             }
             verts.push_back(v);
         } else if (line.substr(0, 3) == "vn ") {
             iss >> trash;
             Vec3f vn;
             for (int i = 0; i < 3; ++i) {
-                iss >> vn.raw[i];
+                iss >> vn[i];
             }
             vn.normalize();
             norms.push_back(vn);
@@ -39,7 +39,7 @@ Model::Model(const char *filename) {
             iss >> trash;
             Vec3f vt;
             for (int i = 0; i < 3; ++i) {
-                iss >> vt.raw[i];
+                iss >> vt[i];
             }
             t_verts.push_back(vt);
         } else if (line.substr(0, 2) == "f ") {
