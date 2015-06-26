@@ -19,6 +19,15 @@ public:
         assert(i < DIM);
         return raw[i];
     }
+
+    float len() const {
+        return std::sqrt((*this) * (*this));
+    }
+
+    vec<DIM,T>& normalize(T l = 1) { 
+        *this = (*this) * (l / len()); 
+        return *this; 
+    }
 private:
     T raw[DIM];
 };
@@ -63,12 +72,12 @@ public:
         return std::sqrt(x * x + y * y + z * z); 
     }
 
-    vec<3,T>& normalize(T l=1) { 
+    vec<3,T>& normalize(T l = 1) { 
         *this = (*this) * (l / len()); 
         return *this; 
     }
     
-    inline vec<3, T> operator^(const vec<3, T> &v) const { 
+    vec<3, T> operator^(const vec<3, T> &v) const { 
         return vec<3, T>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); 
     }
 
@@ -105,6 +114,12 @@ vec<DIM, T> operator*(const U& factor, const vec<DIM, T> &a) {
     return a * factor;
 }
 
+template<size_t DIM, typename T, typename U>
+vec<DIM, T> operator/(vec<DIM, T> a, const U& c) {
+    for (size_t i = DIM; i--; a[i] /= c);
+    return a;
+}
+
 template<size_t DIM, typename T>
 vec<DIM, T>& operator+=(vec<DIM, T> &a, const vec<DIM, T> &b) {
     a = a + b;
@@ -132,11 +147,99 @@ std::ostream& operator<<(std::ostream& s, const vec<DIM, T>& v) {
             s << ", ";
         }
     }
-    s << ")\n";
+    s << ")";
     return s;
+}
+
+template<size_t ROWS, size_t COLS, typename T>
+class matr {
+private:
+    vec<COLS, T> data[ROWS];
+public:
+    matr() {
+        for (size_t i = ROWS; i--; ) {
+            for (size_t j = COLS; j--; data[i][j] = T());
+        }
+    }
+    vec<COLS, T>& operator[](size_t i) {
+        assert(i < ROWS);
+        return data[i];
+    }
+
+    const vec<COLS, T>& operator[](size_t i) const {
+        assert(i < ROWS);
+        return data[i];
+    }
+
+    vec<ROWS, T> col(int j) const {
+        assert(j < COLS);
+        vec<ROWS, T> res;
+        for (size_t i = ROWS; i--; res[i] = data[i][j]);
+        return res;
+    }
+
+    void set_col(int j, const vec<ROWS, T> &v) {
+        assert(j < COLS);
+        for (size_t i = ROWS; i--; data[i][j] = v[i]);
+    }
+
+    static matr<ROWS, COLS, T> identity() {
+        matr<ROWS, COLS, T> res;
+        for (size_t i = std::max(ROWS, COLS); i--; res[i][i] = 1);
+        return res;
+    }
+};
+
+
+template<size_t ROWS, size_t COLS, typename T>
+vec<ROWS, T> operator*(const matr<ROWS, COLS, T> &m, const vec<COLS, T> &v) {
+    vec<ROWS, T> res;
+    for (size_t i = ROWS; i--; res[i] = m[i] * v);
+    return res;
+}
+
+template<size_t R1, size_t C1, size_t C2, typename T>
+matr<R1, C2, T> operator*(const matr<R1, C1, T> &a, const matr<C1, C2, T> &b) {
+    matr<R1, C2, T> res;
+    for (size_t i = R1; i--;) {
+        for (size_t j = C2; j--; res[i][j] = a[i] * b.col(j));
+    }
+    return res;
+}
+
+template<size_t ROWS, size_t COLS, typename T, typename U>
+matr<ROWS, COLS, T> operator*(matr<ROWS, COLS, T> m, const U &f) {
+    for (size_t i = ROWS; i--; ) {
+        for (size_t j = COLS; j--; m[i][j] *= f);
+    }
+    return m;
+}
+
+template<size_t ROWS, size_t COLS, typename T, typename U>
+matr<ROWS, COLS, T> operator*(const U &f, matr<ROWS, COLS, T> m) {
+    for (size_t i = ROWS; i--; ) {
+        for (size_t j = COLS; j--; m[i][j] *= f);
+    }
+    return m;
+}
+
+template<size_t ROWS, size_t COLS, typename T, typename U>
+matr<ROWS, COLS, T> operator/(matr<ROWS, COLS, T> m, const U &c) {
+    for (size_t i = ROWS; i--; ) {
+        for (size_t j = COLS; j--; m[i][j] /= c);
+    }
+    return m;
+}
+
+template<size_t ROWS, size_t COLS, typename T>
+std::ostream& operator<<(std::ostream& s, const matr<ROWS, COLS, T> &m) {
+    for (size_t i = 0; i < ROWS; ++i) {
+        s << m[i] << std::endl;
+    }
 }
 
 using Vec2i = vec<2, int>;
 using Vec2f = vec<2, float>;
 using Vec3i = vec<3, int>;
 using Vec3f = vec<3, float>;
+using Matrix = matr<4, 4, float>;
