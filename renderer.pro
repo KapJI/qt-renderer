@@ -1,6 +1,6 @@
 QT += widgets gui core
 
-CONFIG += console
+CONFIG += console c++11
 CONFIG -= app_bundle
 DEFINES -= QT_NO_DEBUG_OUTPUT
 

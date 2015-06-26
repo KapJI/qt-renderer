@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <iostream>
 
 template<size_t DIM, typename T>
 class vec {
@@ -58,6 +59,9 @@ public:
 
     vec(T x, T y, T z): x(x), y(y), z(z) {}
 
+    template<typename U>
+    vec(const vec<3, U> &v): x(v.x), y(v.y), z(v.z) {}
+    
     T& operator[](size_t i) {
         assert(i < 3);
         return i == 0 ? x : (i == 1 ? y : z);
@@ -136,6 +140,20 @@ template<size_t DIM, typename T, typename U>
 vec<DIM, T>& operator*=(vec<DIM, T> &a, const U& factor) {
     a = a * factor;
     return a;
+}
+
+template<size_t LEN, size_t DIM, typename T> vec<LEN, T> embed(const vec<DIM, T> &v, T fill = 1) {
+    static_assert(LEN >= DIM, "wrong dimensions");
+    vec<LEN, T> res;
+    for (size_t i = LEN; i--; res[i] = (i < DIM ? v[i] : fill));
+    return res;
+}
+
+template<size_t LEN, size_t DIM, typename T> vec<LEN, T> proj(const vec<DIM, T> &v) {
+    static_assert(true, "wrong dimensions");
+    vec<LEN,T> res;
+    for (size_t i = LEN; i--; res[i] = v[i]);
+    return res;
 }
 
 template<size_t DIM, typename T>

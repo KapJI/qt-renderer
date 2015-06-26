@@ -15,7 +15,7 @@
 #define EPS 1e-6
 
 Renderer::Renderer(const QString &model_filename, const QString &texture_filename, int width, int height, QWidget* parent)
-        : model(Model(model_filename.toStdString().c_str())), width(width), height(height), parent(parent) {
+        : parent(parent), model(model_filename.toStdString().c_str()), width(width), height(height) {
     if (texture_filename == "") {
         texture = QImage(1, 1, QImage::Format_RGB32);
         texture.setPixel(QPoint(0, 0), qRgb(255, 255, 255));
@@ -36,12 +36,18 @@ Renderer::Renderer(const QString &model_filename, const QString &texture_filenam
 QImage Renderer::render() {
     light_dir.normalize();
     std::fill(zbuffer, zbuffer + width * height, -INF);
+
+    Vec3f camera(0, 0, 5);
+    Matrix projection = Matrix::identity();
+    projection[3][2] = -1.0f / camera.z;
+
     for (int i = 0; i < model.nfaces(); i++) {
         std::vector<Vec3f> face = model.face(i), texture_face = model.texture_face(i), normals = model.normals(i);
         assert(face.size() == 3);
         Vec3i screen_coords[3];
         for (int j = 0; j < 3; ++j) {
-            screen_coords[j] = adjust(face[j]);
+            vec<4, float> v = projection * embed<4>(Vec3f(face[j]));
+            screen_coords[j] = adjust(proj<3>(v / v[3]));
         }
         Vec2f texture_coords[3];
         for (int j = 0; j < 3; ++j) {
@@ -78,7 +84,7 @@ Vec3i Renderer::adjust(const Vec3f &v) {
 }
 
 void Renderer::setPixel(Vec3i p, const QRgb &color) {
-    if (zbuffer[p.x + p.y * width] < p.z) {
+    if (0 <= p.x && p.x < width && 0 <= p.y && p.y < height && zbuffer[p.x + p.y * width] < p.z) {
         zbuffer[p.x + p.y * width] = p.z;
         frame.setPixel(QPoint(p.x, p.y), color);
     }
