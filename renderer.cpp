@@ -120,17 +120,14 @@ void Renderer::moveLight(QObject* o) {
     float pi = acos(-1.0);
     float step = pi / 18; // 10 degrees
     QPoint v = *(QPoint*)o;
-    float theta = acos(light_dir.y);
-    float phi = atan2(light_dir.z, light_dir.x);
-    phi -= step * v.x();
-    theta += step * v.y();
-    if (theta > pi) {
-        theta -= pi;
+
+    if (v.x() != 0) {
+        light_dir = light_dir.rotate(Vec3f(0, 1, 0), v.x() * step);
     }
-    light_dir = Vec3f(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
+    if (v.y() != 0) {
+        light_dir = light_dir.rotate(Vec3f(1, 0, 0), v.y() * step);
+    }
 
     light_dir.normalize();
-    // std::cerr << step << ' ' << v.x() << ' ' << v.y() << std::endl;
-    // std::cerr << theta << ' ' << phi << ' ' << light_dir << std::endl;
     parent->update();
 }

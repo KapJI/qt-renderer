@@ -85,6 +85,16 @@ public:
         return vec<3, T>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); 
     }
 
+    vec<3, T> rotate(vec<3, T> axis, float ang) const {
+        vec<3, T> res;
+        axis.normalize();
+        float dot = *this * axis;
+        res.x = x * cos(ang) + axis.x * (1 - cos(ang)) * dot + sin(ang) * (-axis.z * y + axis.y * z);
+        res.y = y * cos(ang) + axis.y * (1 - cos(ang)) * dot + sin(ang) * (axis.z * x - axis.x * z);
+        res.z = z * cos(ang) + axis.z * (1 - cos(ang)) * dot + sin(ang) * (-axis.y * x + axis.x * y);
+        return res;
+    }
+
     T x, y, z; 
 };
 
