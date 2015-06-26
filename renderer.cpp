@@ -14,14 +14,8 @@
 #define INF 1e9
 #define EPS 1e-6
 
-Renderer::Renderer(const QString &model_filename, const QString &texture_filename, int width, int height, QWidget* parent)
-        : parent(parent), model(model_filename.toStdString().c_str()), width(width), height(height) {
-    if (texture_filename == "") {
-        texture = QImage(1, 1, QImage::Format_RGB32);
-        texture.setPixel(QPoint(0, 0), qRgb(255, 255, 255));
-    } else {
-        texture = QImage(texture_filename);
-    }
+Renderer::Renderer(const QString &model_filename, int width, int height, QWidget* parent)
+        : parent(parent), model(model_filename.toStdString()), width(width), height(height) {
     frame = QImage(width, height, QImage::Format_RGB32);
     frame.fill(Qt::black);
     float dx = model.max().x - model.min().x;
@@ -42,7 +36,7 @@ QImage Renderer::render() {
     projection[3][2] = -1.0f / camera.z;
 
     for (int i = 0; i < model.nfaces(); i++) {
-        std::vector<Vec3f> face = model.face(i), texture_face = model.texture_face(i), normals = model.normals(i);
+        std::vector<Vec3f> face = model.face(i), texture_face = model.texture_face(i);
         assert(face.size() == 3);
         Vec3i screen_coords[3];
         for (int j = 0; j < 3; ++j) {
@@ -53,14 +47,7 @@ QImage Renderer::render() {
         for (int j = 0; j < 3; ++j) {
             texture_coords[j] = Vec2f(texture_face[j].x, texture_face[j].y);
         }
-        float intensity[3];
-        for (int j = 0; j < 3; ++j) {
-            intensity[j] = normals[j] * light_dir;
-            if (intensity[j] < 0) {
-                intensity[j] = 0;
-            }
-        }
-        triangle(screen_coords, texture_coords, intensity);
+        triangle(screen_coords, texture_coords);
     }
     return frame;
 }
@@ -90,7 +77,7 @@ void Renderer::setPixel(Vec3i p, const QRgb &color) {
     }
 }
 
-void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, float* intensities) {
+void Renderer::triangle(Vec3i* coords, Vec2f* t_coords) {
     Vec2i bbmin(width - 1, height - 1), bbmax(0, 0);
     Vec2i thresh = bbmin;
     for (int i = 0; i < 3; ++i) {
@@ -111,16 +98,18 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, float* intensities) {
             if (bar.x < 0 || bar.y < 0 || bar.z < 0) {
                 continue;
             }
-            float z = 0, intensity = 0;
+            float z = 0;
             Vec2f t_coord(0, 0);
             for (int i = 0; i < 3; ++i) {
                 assert(0 <= bar[i] && bar[i] <= 1);
                 z += coords[i].z * bar[i];
-                intensity += intensities[i] * bar[i];
                 t_coord += t_coords[i] * bar[i];
             }
             p.z = z;
-            QRgb color = texture.pixel(texture.width() * (1.0 - t_coord.x), texture.height() * (1.0 - t_coord.y));
+
+            Vec3f normal = model.normal(t_coord);
+            float intensity = std::max(0.0f, normal * light_dir);
+            QRgb color = model.texture(t_coord);
             QRgb pixel_color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
             setPixel(p, pixel_color);
         }

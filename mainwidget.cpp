@@ -37,10 +37,8 @@ MainWidget::MainWidget(MainWindow* parent): parent(parent) {
     setLayout(layout);
 
     //QString filename = QCoreApplication::arguments().at(1);
-    QString model_filename("obj/african_head.obj");
-    QString texture_filename("obj/african_head_diffuse.png");
-    // QString texture_filename = "";
-    renderer = new Renderer(model_filename, texture_filename, parent->width(), parent->height(), this);
+    QString model_filename("models/african_head");
+    renderer = new Renderer(model_filename, parent->width(), parent->height(), this);
     connect(mapper, SIGNAL(mapped(QObject*)), renderer, SLOT(moveLight(QObject*)));
 }
 

@@ -8,8 +8,10 @@
 
 #include "model.h"
 
-Model::Model(const char *filename) {
-    std::ifstream in(filename);
+Model::Model(const std::string &filename) {
+    diffuse = QImage((filename + "_diffuse.png").c_str());
+    normal_map = QImage((filename + "_nm.png").c_str());
+    std::ifstream in(filename + ".obj");
     if (in.fail()) {
         std::cerr << "Cannot read file " << filename << std::endl;
         return;
@@ -106,6 +108,16 @@ std::vector<Vec3f> Model::texture_face(int idx) const {
         res.push_back(t_verts[v]);
     }
     return res;
+}
+
+QRgb Model::texture(const Vec2f &c) const {
+    return diffuse.pixel(diffuse.width() * c.x, diffuse.height() * (1.0f - c.y));
+}
+
+Vec3f Model::normal(const Vec2f &c) const {
+    QRgb color = normal_map.pixel(normal_map.width() * c.x, normal_map.height() * (1.0f - c.y));
+    Vec3f res(qRed(color) - 128, qGreen(color) - 128, qBlue(color) - 128);
+    return res.normalize();
 }
 
 Vec3f Model::vert(int i) const {
