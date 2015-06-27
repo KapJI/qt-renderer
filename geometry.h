@@ -162,7 +162,7 @@ template<size_t LEN, size_t DIM, typename T> vec<LEN, T> embed(const vec<DIM, T>
 template<size_t LEN, size_t DIM, typename T> vec<LEN, T> proj(const vec<DIM, T> &v) {
     static_assert(true, "wrong dimensions");
     vec<LEN,T> res;
-    for (size_t i = LEN; i--; res[i] = v[i]);
+    for (size_t i = LEN; i--; res[i] = v[i] / v[DIM - 1]);
     return res;
 }
 
@@ -178,6 +178,25 @@ std::ostream& operator<<(std::ostream& s, const vec<DIM, T>& v) {
     s << ")";
     return s;
 }
+
+template<size_t ROWS, size_t COLS, typename T> 
+class matr;
+
+template<size_t DIM, typename T>
+struct dt {
+    static T det(const matr<DIM, DIM, T> &m) {
+        T res = T();
+        for (size_t i = DIM; i--; res += m[0][i] * m.cofactor(0, i));
+        return res;
+    }
+};
+
+template<typename T>
+struct dt<1, T> {
+    static T det(const matr<1, 1, T> &m) {
+        return m[0][0];
+    }
+};
 
 template<size_t ROWS, size_t COLS, typename T>
 class matr {
@@ -199,14 +218,14 @@ public:
         return data[i];
     }
 
-    vec<ROWS, T> col(int j) const {
+    vec<ROWS, T> col(size_t j) const {
         assert(j < COLS);
         vec<ROWS, T> res;
         for (size_t i = ROWS; i--; res[i] = data[i][j]);
         return res;
     }
 
-    void set_col(int j, const vec<ROWS, T> &v) {
+    void set_col(size_t j, const vec<ROWS, T> &v) {
         assert(j < COLS);
         for (size_t i = ROWS; i--; data[i][j] = v[i]);
     }
@@ -215,6 +234,36 @@ public:
         matr<ROWS, COLS, T> res;
         for (size_t i = std::max(ROWS, COLS); i--; res[i][i] = 1);
         return res;
+    }
+
+    matr<ROWS - 1, COLS - 1, T> get_minor(size_t row, size_t col) const {
+        matr<ROWS - 1, COLS - 1, T> res;
+        for (size_t i = ROWS - 1; i--; ) {
+            for (size_t j = COLS - 1; j--; res[i][j] = data[i + (i >= row)][j + (j >= col)]);
+        }
+        return res;
+    }
+
+    T det() const {
+        return dt<ROWS, T>::det(*this);
+    }
+
+    T cofactor(size_t i, size_t j) const {
+        return get_minor(i, j).det() * ((i + j) % 2 ? -1 : 1);
+    }
+
+    matr<ROWS, COLS, T> adjugate() const {
+        matr<ROWS, COLS, T> res;
+        for (size_t i = ROWS; i--; ) {
+            for (size_t j = COLS; j--; res[i][j] = cofactor(i, j));
+        }
+        return res;
+    }
+
+    matr<ROWS, COLS, T> invert_transpose() const {
+        matr<ROWS, COLS, T> res = adjugate();
+        T det = res[0] * data[0];
+        return res / det;
     }
 };
 
@@ -264,6 +313,12 @@ std::ostream& operator<<(std::ostream& s, const matr<ROWS, COLS, T> &m) {
     for (size_t i = 0; i < ROWS; ++i) {
         s << m[i] << std::endl;
     }
+    return s;
+}
+
+template<typename T>
+vec<3, T> operator*(const matr<4, 4, T> &m, const vec<3, T> &v) {
+    return proj<3>(m * embed<4>(v));
 }
 
 using Vec2i = vec<2, int>;

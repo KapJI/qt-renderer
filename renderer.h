@@ -13,20 +13,20 @@ class Renderer: public QObject {
 public:
     Renderer(const QString &model_filename, int width, int height, QWidget* parent);
     QImage render();
-    Vec3f light_dir;
 public slots:
     void moveLight(QObject* v);
 protected:
     void setPixel(Vec3i p, const QRgb &color);
-    void triangle(Vec3i* coords, Vec2f* t_coords);
-    Vec3i adjust(const Vec3f &v);
-    QImage diff(const QImage &img1, const QImage &img2);
+    void triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Vec3f &view_light);
+    QImage diff(const QImage &img1, const QImage &img2) const;
+    Matrix lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) const;
+    Matrix viewport(int x, int y, int w, int h) const;
 private:
     QWidget* parent;
-	QImage frame;
-	Model model;
-	float scale;
-	int addx, addy;
+    QImage frame;
+    Model model;
     int width, height;
-	int* zbuffer;
+    int* zbuffer;
+    Vec3f light_dir, eye, center;
+    Matrix transform, transform_inv;
 };

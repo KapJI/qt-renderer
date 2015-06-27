@@ -25,8 +25,6 @@ Model::Model(const std::string &filename) {
             Vec3f v;
             for (int i = 0; i < 3; ++i) {
                 iss >> v[i];
-                min_[i] = std::min(min_[i], v[i]);
-                max_[i] = std::max(max_[i], v[i]);
             }
             verts.push_back(v);
         } else if (line.substr(0, 3) == "vn ") {
@@ -122,12 +120,4 @@ Vec3f Model::normal(const Vec2f &c) const {
 
 Vec3f Model::vert(int i) const {
     return verts[i];
-}
-
-Vec3f Model::min() const {
-    return min_;
-}
-
-Vec3f Model::max() const {
-    return max_;
 }
