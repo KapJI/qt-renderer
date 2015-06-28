@@ -15,8 +15,11 @@
 #define INF 1e9
 #define EPS 1e-6
 
-Renderer::Renderer(const QString &model_filename, int width, int height, QWidget* parent)
-        : parent(parent), model(model_filename.toStdString()), width(width), height(height) {
+Renderer::Renderer(const QVector<QString> &model_filenames, int width, int height, QWidget* parent)
+        : parent(parent), width(width), height(height) {
+    for (int i = 0; i < model_filenames.size(); ++i) {
+        models.push_back(new Model(model_filenames[i].toStdString()));
+    }
     frame = QImage(width, height, QImage::Format_RGB32);
     zbuffer = new int[width * height];
     light_dir = Vec3f(0, 0, 1);
@@ -38,20 +41,23 @@ QImage Renderer::render() {
     transform_inv = (projection * gl::rotate(eye, center, Vec3f(0, 1, 0))).invertTranspose();
 
     Vec3f view_light = (modelview * light_dir + center).normalize();
-    for (int i = 0; i < model.nfaces(); i++) {
-        std::vector<Vec3f> face = model.face(i), texture_face = model.textureFace(i), normals = model.normals(i);
-        assert(face.size() == 3);
-        Vec3i screen_coords[3];
-        for (int j = 0; j < 3; ++j) {
-            screen_coords[j] = transform * Vec3f(face[j]);
+    for (int k = 0; k < models.size(); ++k) {
+        cur_model = models[k];
+        for (int i = 0; i < cur_model->nfaces(); i++) {
+            std::vector<Vec3f> face = cur_model->face(i), texture_face = cur_model->textureFace(i), normals = cur_model->normals(i);
+            assert(face.size() == 3);
+            Vec3i screen_coords[3];
+            for (int j = 0; j < 3; ++j) {
+                screen_coords[j] = transform * Vec3f(face[j]);
+            }
+            Vec2f texture_coords[3];
+            Vec3f normal_coords[3];
+            for (int j = 0; j < 3; ++j) {
+                texture_coords[j] = Vec2f(texture_face[j].x, texture_face[j].y);
+                normal_coords[j] = (transform_inv * normals[j]).normalize();
+            }
+            triangle(screen_coords, texture_coords, normal_coords, view_light);
         }
-        Vec2f texture_coords[3];
-        Vec3f normal_coords[3];
-        for (int j = 0; j < 3; ++j) {
-            texture_coords[j] = Vec2f(texture_face[j].x, texture_face[j].y);
-            normal_coords[j] = (transform_inv * normals[j]).normalize();
-        }
-        triangle(screen_coords, texture_coords, normal_coords, view_light);
     }
     // Draw light source
     //gl::setPixel(frame, zbuffer, viewport * view_light, qRgb(255, 255, 0));
@@ -91,9 +97,9 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             approx_normal.normalize();
             p.z = z;
 
-            Vec3f normal = (transform_inv * model.normal(t_coord)).normalize();
+            Vec3f normal = (transform_inv * cur_model->normal(t_coord)).normalize();
             float intensity = std::max(0.0f, normal * light_view);
-            QRgb color = model.texture(t_coord);
+            QRgb color = cur_model->texture(t_coord);
             QRgb pixel_color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
             if (approx_normal * Vec3f(0, 0, 1) < 0) {
                 pixel_color = qRgb(0, 0, 0);

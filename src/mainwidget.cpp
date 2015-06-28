@@ -36,9 +36,11 @@ MainWidget::MainWidget(MainWindow* parent): parent(parent) {
     layout->addLayout(arrows_layout);
     setLayout(layout);
 
-    //QString filename = QCoreApplication::arguments().at(1);
-    QString model_filename("models/african_head/african_head");
-    renderer = new Renderer(model_filename, parent->width(), parent->height(), this);
+    QVector<QString> models;
+    models.push_back("models/african_head/african_head");
+    models.push_back("models/african_head/african_head_eye_inner");
+    // QString model_filename("models/diablo3/diablo3_pose");
+    renderer = new Renderer(models, parent->width(), parent->height(), this);
     connect(mapper, SIGNAL(mapped(QObject*)), renderer, SLOT(moveLight(QObject*)));
 }
 

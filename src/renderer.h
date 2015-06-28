@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QImage>
 #include <QColor>
+#include <QVector>
 #include <QString>
 
 #include "geometry.h"
@@ -11,7 +12,7 @@
 class Renderer: public QObject {
     Q_OBJECT
 public:
-    Renderer(const QString &model_filename, int width, int height, QWidget* parent);
+    Renderer(const QVector<QString> &model_filenames, int width, int height, QWidget* parent);
     QImage render();
     void moveEye(const QPoint &v);
     void moveCenter(const QPoint &v);
@@ -22,7 +23,8 @@ protected:
 private:
     QWidget* parent;
     QImage frame;
-    Model model;
+    QVector<Model*> models;
+    Model* cur_model;
     int width, height;
     int* zbuffer;
     Vec3f light_dir, eye, center;
