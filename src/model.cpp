@@ -6,11 +6,13 @@
 #include <cstdlib>
 #include <cassert>
 
+#include "image.h"
 #include "model.h"
 
 Model::Model(const std::string &filename) {
-    diffuse = QImage((filename + "_diffuse.png").c_str());
-    normal_map = QImage((filename + "_nm.png").c_str());
+    diffuse = Image::read_file((filename + "_diffuse.tga").c_str());
+    normal_map = Image::read_file((filename + "_nm.tga").c_str());
+
     std::ifstream in(filename + ".obj");
     if (in.fail()) {
         std::cerr << "Cannot read file " << filename << std::endl;
