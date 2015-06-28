@@ -20,22 +20,22 @@ Renderer::Renderer(const QString &model_filename, int width, int height, QWidget
     frame = QImage(width, height, QImage::Format_RGB32);
     zbuffer = new int[width * height];
     light_dir = Vec3f(0, 0, 1);
-    eye = Vec3f(-1, 1, -5);
+    eye = Vec3f(0, 0, -3);
     center = Vec3f(0, 0, 0);
 }
 
 QImage Renderer::render() {
     frame.fill(Qt::black);
     std::fill(zbuffer, zbuffer + width * height, -INF);
+
     light_dir.normalize();
 
     Matrix modelview = gl::lookat(eye, center, Vec3f(0, 1, 0));
     Matrix projection = gl::projection((center - eye).len());
     Matrix viewport = gl::viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
 
-    transform = projection * modelview;
-    transform_inv = transform.invertTranspose();
-    transform = viewport * transform;
+    transform = viewport * projection * modelview;
+    transform_inv = (projection * gl::rotate(eye, center, Vec3f(0, 1, 0))).invertTranspose();
 
     Vec3f view_light = (modelview * light_dir + center).normalize();
     for (int i = 0; i < model.nfaces(); i++) {
@@ -54,15 +54,15 @@ QImage Renderer::render() {
         triangle(screen_coords, texture_coords, normal_coords, view_light);
     }
     // Draw light source
-    // gl::setPixel(frame, zbuffer, view_port * view_light, qRgb(255, 255, 0));
+    //gl::setPixel(frame, zbuffer, viewport * view_light, qRgb(255, 255, 0));
     return frame;
 }
 
-void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Vec3f &view_light) {
+void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Vec3f &light_view) {
     Vec2i bbmin(width - 1, height - 1), bbmax(0, 0);
     Vec2i thresh = bbmin;
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 2; ++j) {
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = 0; j < 2; ++j) {
             bbmin[j] = std::max(0, std::min(bbmin[j], coords[i][j]));
             bbmax[j] = std::min(thresh[j], std::max(bbmax[j], coords[i][j]));
         }
@@ -92,7 +92,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             p.z = z;
 
             Vec3f normal = (transform_inv * model.normal(t_coord)).normalize();
-            float intensity = std::max(0.0f, normal * view_light);
+            float intensity = std::max(0.0f, normal * light_view);
             QRgb color = model.texture(t_coord);
             QRgb pixel_color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
             if (approx_normal * Vec3f(0, 0, 1) < 0) {
@@ -118,7 +118,33 @@ void Renderer::moveLight(QObject* o) {
     if (v.y() != 0) {
         light_dir = light_dir.rotate(x, v.y() * step);
     }
-
     light_dir.normalize();
+
+    parent->update();
+}
+
+void Renderer::moveEye(const QPoint &v) {
+    float pi = acos(-1.0);
+    float step = pi / 36; // 5 degrees
+
+    if (v.x() != 0) {
+        eye = center + (eye - center).rotate(Vec3f(0, 1, 0), v.x() * step);
+    }
+    if (v.y() != 0) {
+        eye = center + (eye - center).rotate(Vec3f(0, 1, 0) ^ (eye - center), v.y() * step);
+    }
+    parent->update();
+}
+
+void Renderer::moveCenter(const QPoint &v) {
+    float step = 0.1;
+
+    Vec3f z = (eye - center).normalize();
+    Vec3f x = (z ^ Vec3f(0, 1, 0)).normalize();
+    x = x * (step * v.x());
+    z = z * (step * v.y());
+    center += z + x;
+    eye += z + x;
+
     parent->update();
 }

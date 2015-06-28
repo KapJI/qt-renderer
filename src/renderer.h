@@ -13,6 +13,8 @@ class Renderer: public QObject {
 public:
     Renderer(const QString &model_filename, int width, int height, QWidget* parent);
     QImage render();
+    void moveEye(const QPoint &v);
+    void moveCenter(const QPoint &v);
 public slots:
     void moveLight(QObject* v);
 protected:

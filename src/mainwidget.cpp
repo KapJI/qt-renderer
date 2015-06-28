@@ -49,3 +49,18 @@ void MainWidget::paintEvent(QPaintEvent *event) {
         painter.drawImage(QPoint(0, 0), image.mirrored());
     }
 }
+
+void MainWidget::keyPress(QKeyEvent *event) const {
+    int dx[] = {0, -1, 0, 1};
+    int dy[] = {1, 0, -1, 0};
+    char dirs[] = "wasd";
+    int sides[] = {Qt::Key_Up, Qt::Key_Left, Qt::Key_Down, Qt::Key_Right};
+    for (size_t i = 0; i < 4; ++i) {
+        if (event->key() == sides[i]) {
+            renderer->moveEye(QPoint(dx[i], dy[i]));
+        }
+        if (!event->text().isEmpty() && event->text()[0] == dirs[i]) {
+            renderer->moveCenter(QPoint(dx[i], dy[i]));
+        }
+    }
+}

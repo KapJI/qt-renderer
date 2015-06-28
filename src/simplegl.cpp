@@ -12,19 +12,25 @@ void gl::setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color) {
     }
 }
 
-Matrix gl::lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
+Matrix gl::rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     Vec3f z = (center - eye).normalize();
     Vec3f x = (up ^ z).normalize();
     Vec3f y = (z ^ x).normalize();
-    Matrix rotate = Matrix::identity();
+    Matrix res = Matrix::identity();
+    for (size_t i = 0; i < 3; ++i) {
+        res[0][i] = x[i];
+        res[1][i] = y[i];
+        res[2][i] = z[i];
+    }
+    return res;
+}
+
+Matrix gl::lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     Matrix move = Matrix::identity();
     for (size_t i = 0; i < 3; ++i) {
-        rotate[0][i] = x[i];
-        rotate[1][i] = y[i];
-        rotate[2][i] = z[i];
         move[i][3] = -center[i];
     }
-    return rotate * move;
+    return rotate(eye, center, up) * move;
 }
 
 Matrix gl::viewport(int x, int y, int w, int h) {
