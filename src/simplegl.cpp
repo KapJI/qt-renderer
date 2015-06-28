@@ -5,7 +5,7 @@
 
 #define DEPTH 1000
 
-void gl::set_pixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color) {
+void gl::setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color) {
     if (0 <= p.x && p.x < img.width() && 0 <= p.y && p.y < img.height() && zbuffer[p.x + p.y * img.width()] < p.z) {
         zbuffer[p.x + p.y * img.width()] = p.z;
         img.setPixel(QPoint(p.x, p.y), color);

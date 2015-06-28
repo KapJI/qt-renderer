@@ -24,7 +24,7 @@ struct TGA_Header {
 
 class Image {
 public:
-    static QImage read_file(const char *filename);
+    static QImage readFile(const char *filename);
 private:
     Image();
     

@@ -34,12 +34,12 @@ QImage Renderer::render() {
     Matrix viewport = gl::viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
 
     transform = projection * modelview;
-    transform_inv = transform.invert_transpose();
+    transform_inv = transform.invertTranspose();
     transform = viewport * transform;
 
     Vec3f view_light = (modelview * light_dir + center).normalize();
     for (int i = 0; i < model.nfaces(); i++) {
-        std::vector<Vec3f> face = model.face(i), texture_face = model.texture_face(i), normals = model.normals(i);
+        std::vector<Vec3f> face = model.face(i), texture_face = model.textureFace(i), normals = model.normals(i);
         assert(face.size() == 3);
         Vec3i screen_coords[3];
         for (int j = 0; j < 3; ++j) {
@@ -54,7 +54,7 @@ QImage Renderer::render() {
         triangle(screen_coords, texture_coords, normal_coords, view_light);
     }
     // Draw light source
-    // gl::set_pixel(frame, zbuffer, view_port * view_light, qRgb(255, 255, 0));
+    // gl::setPixel(frame, zbuffer, view_port * view_light, qRgb(255, 255, 0));
     return frame;
 }
 
@@ -98,7 +98,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             if (approx_normal * Vec3f(0, 0, 1) < 0) {
                 pixel_color = qRgb(0, 0, 0);
             }
-            gl::set_pixel(frame, zbuffer, p, pixel_color);
+            gl::setPixel(frame, zbuffer, p, pixel_color);
         }
     }
 }

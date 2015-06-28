@@ -16,7 +16,7 @@ public:
 	Vec3f vert(int i) const;
 	std::vector<Vec3f> face(int idx) const;
 	std::vector<Vec3f> normals(int idx) const;
-	std::vector<Vec3f> texture_face(int idx) const;
+	std::vector<Vec3f> textureFace(int idx) const;
 	QRgb texture(const Vec2f &c) const;
 	Vec3f normal(const Vec2f &c) const;
 private:

@@ -10,8 +10,8 @@
 #include "model.h"
 
 Model::Model(const std::string &filename) {
-    diffuse = Image::read_file((filename + "_diffuse.tga").c_str());
-    normal_map = Image::read_file((filename + "_nm.tga").c_str());
+    diffuse = Image::readFile((filename + "_diffuse.tga").c_str());
+    normal_map = Image::readFile((filename + "_nm.tga").c_str());
 
     std::ifstream in(filename + ".obj");
     if (in.fail()) {
@@ -102,7 +102,7 @@ std::vector<Vec3f> Model::normals(int idx) const {
     return res;
 }
 
-std::vector<Vec3f> Model::texture_face(int idx) const {
+std::vector<Vec3f> Model::textureFace(int idx) const {
     std::vector<Vec3f> res;
     for (auto v : vt_faces[idx]) {
         res.push_back(t_verts[v]);

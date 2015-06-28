@@ -132,7 +132,7 @@ bool Image::load_rle_data(std::ifstream &in) {
     return true;
 }
 
-QImage Image::read_file(const char *filename) {
+QImage Image::readFile(const char *filename) {
     QString file(filename);
     if (file.endsWith(QString(".tga"), Qt::CaseInsensitive)) {
         return Image::read_tga_file(filename);
