@@ -37,7 +37,7 @@ MainWidget::MainWidget(MainWindow* parent): parent(parent) {
     setLayout(layout);
 
     //QString filename = QCoreApplication::arguments().at(1);
-    QString model_filename("models/african_head");
+    QString model_filename("models/african_head/african_head");
     renderer = new Renderer(model_filename, parent->width(), parent->height(), this);
     connect(mapper, SIGNAL(mapped(QObject*)), renderer, SLOT(moveLight(QObject*)));
 }

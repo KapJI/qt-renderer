@@ -7,8 +7,22 @@ DEFINES -= QT_NO_DEBUG_OUTPUT
 DEPENDPATH += .
 INCLUDEPATH += .
 
-SOURCES += src/main.cpp src/mainwindow.cpp src/model.cpp src/mainwidget.cpp src/renderer.cpp src/image.cpp
-HEADERS += src/mainwindow.h src/geometry.h src/model.h src/mainwidget.h src/renderer.h src/image.h
+SOURCES += \
+	src/main.cpp \
+	src/mainwindow.cpp \
+	src/mainwidget.cpp \
+	src/model.cpp \
+	src/image.cpp \
+	src/simplegl.cpp \
+	src/renderer.cpp 
+HEADERS += \
+	src/mainwindow.h \
+	src/mainwidget.h \
+	src/geometry.h \
+	src/model.h \
+	src/image.h \
+	src/simplegl.h \
+	src/renderer.h 
 
 DESTDIR = .
 PROJECT_DIR = $$_PRO_FILE_PWD_

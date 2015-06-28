@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <iostream>
 
+#include "simplegl.h"
 #include "renderer.h"
 
 #define DEPTH 1000
@@ -19,7 +20,7 @@ Renderer::Renderer(const QString &model_filename, int width, int height, QWidget
     frame = QImage(width, height, QImage::Format_RGB32);
     zbuffer = new int[width * height];
     light_dir = Vec3f(0, 0, 1);
-    eye = Vec3f(1, 1, 5);
+    eye = Vec3f(-1, 1, -5);
     center = Vec3f(0, 0, 0);
 }
 
@@ -28,17 +29,15 @@ QImage Renderer::render() {
     std::fill(zbuffer, zbuffer + width * height, -INF);
     light_dir.normalize();
 
-    Matrix model_view = lookat(eye, center, Vec3f(0, 1, 0));
-    
-    Matrix projection = Matrix::identity();
-    projection[3][2] = -1.0f / (center - eye).len();
+    Matrix modelview = gl::lookat(eye, center, Vec3f(0, 1, 0));
+    Matrix projection = gl::projection((center - eye).len());
+    Matrix viewport = gl::viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
 
-    Matrix view_port = viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
-    transform = projection * model_view;
+    transform = projection * modelview;
     transform_inv = transform.invert_transpose();
-    transform = view_port * transform;
+    transform = viewport * transform;
 
-    Vec3f view_light = (model_view * light_dir + center).normalize();
+    Vec3f view_light = (modelview * light_dir + center).normalize();
     for (int i = 0; i < model.nfaces(); i++) {
         std::vector<Vec3f> face = model.face(i), texture_face = model.texture_face(i), normals = model.normals(i);
         assert(face.size() == 3);
@@ -55,29 +54,8 @@ QImage Renderer::render() {
         triangle(screen_coords, texture_coords, normal_coords, view_light);
     }
     // Draw light source
-    // setPixel(view_port * view_light, qRgb(255, 255, 0));
+    // gl::set_pixel(frame, zbuffer, view_port * view_light, qRgb(255, 255, 0));
     return frame;
-}
-
-QImage Renderer::diff(const QImage &img1, const QImage &img2) const {
-    assert(img1.width() == img2.width());
-    assert(img1.height() == img2.height());
-    QImage res(img1.width(), img1.height(), QImage::Format_RGB32);
-    for (int x = 0; x < img1.width(); ++x) {
-        for (int y = 0; y < img1.height(); ++y) {
-            QRgb a = img1.pixel(x, y);
-            QRgb b = img2.pixel(x, y);
-            res.setPixel(QPoint(x, y), qRgb(std::abs(qRed(a) - qRed(b)), std::abs(qGreen(a) - qGreen(b)), std::abs(qBlue(a) - qBlue(b))));
-        }
-    }
-    return res;
-}
-
-void Renderer::setPixel(Vec3i p, const QRgb &color) {
-    if (0 <= p.x && p.x < width && 0 <= p.y && p.y < height && zbuffer[p.x + p.y * width] < p.z) {
-        zbuffer[p.x + p.y * width] = p.z;
-        frame.setPixel(QPoint(p.x, p.y), color);
-    }
 }
 
 void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Vec3f &view_light) {
@@ -97,7 +75,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             if (u.z == 0) {
                 continue;
             }
-            Vec3f bar(1.0 - (u.x + u.y) / float(u.z), u.x / float(u.z), u.y / float(u.z));
+            Vec3f bar = Vec3f(u.z - u.x - u.y, u.x, u.y) / float(u.z);
             if (bar.x < 0 || bar.y < 0 || bar.z < 0) {
                 continue;
             }
@@ -120,7 +98,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             if (approx_normal * Vec3f(0, 0, 1) < 0) {
                 pixel_color = qRgb(0, 0, 0);
             }
-            setPixel(p, pixel_color);
+            gl::set_pixel(frame, zbuffer, p, pixel_color);
         }
     }
 }
@@ -143,31 +121,4 @@ void Renderer::moveLight(QObject* o) {
 
     light_dir.normalize();
     parent->update();
-}
-
-Matrix Renderer::lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) const {
-    Vec3f z = (center - eye).normalize();
-    Vec3f x = (up ^ z).normalize();
-    Vec3f y = (z ^ x).normalize();
-    Matrix rotate = Matrix::identity();
-    Matrix move = Matrix::identity();
-    for (size_t i = 0; i < 3; ++i) {
-        rotate[0][i] = x[i];
-        rotate[1][i] = y[i];
-        rotate[2][i] = z[i];
-        move[i][3] = -center[i];
-    }
-    return rotate * move;
-}
-
-Matrix Renderer::viewport(int x, int y, int w, int h) const {
-    Matrix m = Matrix::identity();
-    m[0][3] = x + w / 2.0f;
-    m[1][3] = y + h / 2.0f;
-    m[2][3] = DEPTH / 2.0f;
-
-    m[0][0] = w / 2.0f;
-    m[1][1] = h / 2.0f;
-    m[2][2] = DEPTH / 2.0f;
-    return m;
 }
