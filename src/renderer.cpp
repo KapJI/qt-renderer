@@ -25,6 +25,7 @@ Renderer::Renderer(const QVector<QString> &model_filenames, int width, int heigh
     light_dir = Vec3f(0, 0, 1);
     eye = Vec3f(0, 0, -3);
     center = Vec3f(0, 0, 0);
+    up = Vec3f(0, 1, 0);
 }
 
 QImage Renderer::render() {
@@ -33,14 +34,14 @@ QImage Renderer::render() {
 
     light_dir.normalize();
 
-    Matrix modelview = gl::lookat(eye, center, Vec3f(0, 1, 0));
-    Matrix projection = gl::set_projection((center - eye).len());
-    Matrix viewport = gl::set_viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
+    gl::lookat(eye, center, up);
+    gl::set_projection((center - eye).len());
+    gl::set_viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
 
-    transform = viewport * projection * modelview;
-    transform_inv = (projection * gl::rotate(eye, center, Vec3f(0, 1, 0))).invertTranspose();
+    transform = gl::viewport * gl::projection * gl::modelview;
+    transform_inv = (gl::projection * gl::rotate(eye, center, Vec3f(0, 1, 0))).invertTranspose();
 
-    Vec3f view_light = (modelview * light_dir + center).normalize();
+    Vec3f view_light = (gl::modelview * light_dir + center).normalize();
     for (int k = 0; k < models.size(); ++k) {
         cur_model = models[k];
         for (int i = 0; i < cur_model->nfaces(); i++) {
@@ -48,7 +49,7 @@ QImage Renderer::render() {
             assert(face.size() == 3);
             Vec3i screen_coords[3];
             for (int j = 0; j < 3; ++j) {
-                screen_coords[j] = transform * Vec3f(face[j]);
+                screen_coords[j] = transform * face[j];
             }
             Vec2f texture_coords[3];
             Vec3f normal_coords[3];
@@ -60,7 +61,7 @@ QImage Renderer::render() {
         }
     }
     // Draw light source
-    //gl::setPixel(frame, zbuffer, viewport * view_light, qRgb(255, 255, 0));
+    // gl::setPixel(frame, zbuffer, gl::viewport * view_light, qRgb(255, 255, 0));
     return frame;
 }
 
@@ -110,7 +111,7 @@ void Renderer::moveLight(QObject* o) {
     QPoint v = *(QPoint*)o;
 
     Vec3f z = (center - eye).normalize();
-    Vec3f x = (Vec3f(0, 1, 0) ^ z).normalize();
+    Vec3f x = (up ^ z).normalize();
     Vec3f y = (z ^ x).normalize();
 
     if (v.x() != 0) {
@@ -129,10 +130,10 @@ void Renderer::moveEye(const QPoint &v) {
     float step = pi / 36; // 5 degrees
 
     if (v.x() != 0) {
-        eye = center + (eye - center).rotate(Vec3f(0, 1, 0), v.x() * step);
+        eye = center + (eye - center).rotate(up, v.x() * step);
     }
     if (v.y() != 0) {
-        eye = center + (eye - center).rotate(Vec3f(0, 1, 0) ^ (eye - center), v.y() * step);
+        eye = center + (eye - center).rotate(up ^ (eye - center), v.y() * step);
     }
     parent->update();
 }
@@ -141,7 +142,7 @@ void Renderer::moveCenter(const QPoint &v) {
     float step = 0.1;
 
     Vec3f z = (eye - center).normalize();
-    Vec3f x = (z ^ Vec3f(0, 1, 0)).normalize();
+    Vec3f x = (z ^ up).normalize();
     x = x * (step * v.x());
     z = z * (step * v.y());
     center += z + x;

@@ -5,6 +5,10 @@
 
 #define DEPTH 1000
 
+Matrix gl::viewport;
+Matrix gl::projection;
+Matrix gl::modelview;
+
 void gl::setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color) {
     if (0 <= p.x && p.x < img.width() && 0 <= p.y && p.y < img.height() && zbuffer[p.x + p.y * img.width()] < p.z) {
         zbuffer[p.x + p.y * img.width()] = p.z;
@@ -25,30 +29,28 @@ Matrix gl::rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     return res;
 }
 
-Matrix gl::lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
+void gl::lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     Matrix move = Matrix::identity();
     for (size_t i = 0; i < 3; ++i) {
         move[i][3] = -center[i];
     }
-    return rotate(eye, center, up) * move;
+    modelview = rotate(eye, center, up) * move;
 }
 
-Matrix gl::set_viewport(int x, int y, int w, int h) {
-    Matrix m = Matrix::identity();
-    m[0][3] = x + w / 2.0f;
-    m[1][3] = y + h / 2.0f;
-    m[2][3] = DEPTH / 2.0f;
+void gl::set_viewport(int x, int y, int w, int h) {
+    viewport = Matrix::identity();
+    viewport[0][3] = x + w / 2.0f;
+    viewport[1][3] = y + h / 2.0f;
+    viewport[2][3] = DEPTH / 2.0f;
 
-    m[0][0] = w / 2.0f;
-    m[1][1] = h / 2.0f;
-    m[2][2] = DEPTH / 2.0f;
-    return m;
+    viewport[0][0] = w / 2.0f;
+    viewport[1][1] = h / 2.0f;
+    viewport[2][2] = DEPTH / 2.0f;
 }
 
-Matrix gl::set_projection(float dist) {
-    Matrix m = Matrix::identity();
-    m[3][2] = -1.0f / dist;
-    return m;
+void gl::set_projection(float dist) {
+    projection = Matrix::identity();
+    projection[3][2] = -1.0f / dist;
 }
 
 Vec3f gl::barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p) {
@@ -65,27 +67,27 @@ Vec3f gl::barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p) {
     return Vec3f(-1, -1, -1);
 }
 
-void gl::triangle(Matr<4, 3, float> &clipc, IShader &shader, QImage &image, float *zbuffer) {
-    Matr<3, 4, float> pts = (viewport * clipc).transpose(); // transposed to ease access to each of the points
-    Matr<3, 2, float> pts2;
-    for (int i = 0; i < 3; i++) pts2[i] = proj<2>(pts[i]);
+void gl::triangle(Matr<4, 3, float> &clip_coords, IShader &shader, QImage &image, float *zbuffer) {
+    Matr<3, 4, float> pts = (viewport * clip_coords).transpose();
+    Matr<3, 2, float> screen_coords;
+    for (size_t i = 0; i < 3; i++) screen_coords[i] = proj<2>(pts[i]);
 
     Vec2f bbmin(image.width() - 1, image.height() - 1), bbmax(0, 0);
     Vec2f thresh = bbmin;
     for (size_t i = 0; i < 3; ++i) {
         for (size_t j = 0; j < 2; ++j) {
-            bbmin[j] = std::max(0.0f, std::min(bbmin[j], pts2[i][j]));
-            bbmax[j] = std::min(thresh[j], std::max(bbmax[j], pts2[i][j]));
+            bbmin[j] = std::max(0.0f, std::min(bbmin[j], screen_coords[i][j]));
+            bbmax[j] = std::min(thresh[j], std::max(bbmax[j], screen_coords[i][j]));
         }
     }
     Vec2i p;
     QRgb color;
     for (p.x = bbmin.x; p.x <= bbmax.x; ++p.x) {
         for (p.y = bbmin.y; p.y <= bbmax.y; ++p.y) {
-            Vec3f bc_screen  = barycentric(pts2[0], pts2[1], pts2[2], p);
-            Vec3f bc_clip    = Vec3f(bc_screen.x/pts[0][3], bc_screen.y/pts[1][3], bc_screen.z/pts[2][3]);
+            Vec3f bc_screen = barycentric(screen_coords[0], screen_coords[1], screen_coords[2], p);
+            Vec3f bc_clip = Vec3f(bc_screen.x / pts[0][3], bc_screen.y / pts[1][3], bc_screen.z / pts[2][3]);
             bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
-            float frag_depth = clipc[2] * bc_clip;
+            float frag_depth = clip_coords[2] * bc_clip;
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[p.x + p.y * image.width()] > frag_depth) {
                 continue;
             }

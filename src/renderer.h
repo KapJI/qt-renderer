@@ -27,6 +27,6 @@ private:
     Model* cur_model;
     int width, height;
     int* zbuffer;
-    Vec3f light_dir, eye, center;
+    Vec3f light_dir, eye, center, up;
     Matrix transform, transform_inv;
 };

@@ -12,12 +12,12 @@ struct IShader {
 
 namespace gl {
 	void setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color);
-    Matrix lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
+    void lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
     Matrix rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
-    Matrix set_viewport(int x, int y, int w, int h);
-    Matrix set_projection(float dist);
+    void set_viewport(int x, int y, int w, int h);
+    void set_projection(float dist);
     Vec3f barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p);
-    void triangle(Matr<4, 3, float> &clipc, IShader &shader, QImage &image, float *zbuffer);
+    void triangle(Matr<4, 3, float> &clip_coords, IShader &shader, QImage &image, float *zbuffer);
 	QImage diff(const QImage &img1, const QImage &img2);
 
 	extern Matrix viewport;
