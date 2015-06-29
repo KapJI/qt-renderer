@@ -4,18 +4,23 @@
 
 #include "geometry.h"
 
-namespace gl {
-	void setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color);
-    Matrix lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
-    Matrix rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
-    Matrix viewport(int x, int y, int w, int h);
-    Matrix projection(float dist);
-    Vec3f barycentric(Vec2f* tr, Vec2f p);
-	QImage diff(const QImage &img1, const QImage &img2);
-}
-
 struct IShader {
     virtual ~IShader();
     virtual Vec3i vertex(int iface, int nthvert) = 0;
     virtual bool fragment(Vec3f bar, QRgb &color) = 0;
 };
+
+namespace gl {
+	void setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color);
+    Matrix lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
+    Matrix rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
+    Matrix set_viewport(int x, int y, int w, int h);
+    Matrix set_projection(float dist);
+    Vec3f barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p);
+    void triangle(Matr<4, 3, float> &clipc, IShader &shader, QImage &image, float *zbuffer);
+	QImage diff(const QImage &img1, const QImage &img2);
+
+	extern Matrix viewport;
+	extern Matrix projection;
+	extern Matrix modelview;
+}

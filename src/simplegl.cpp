@@ -33,7 +33,7 @@ Matrix gl::lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     return rotate(eye, center, up) * move;
 }
 
-Matrix gl::viewport(int x, int y, int w, int h) {
+Matrix gl::set_viewport(int x, int y, int w, int h) {
     Matrix m = Matrix::identity();
     m[0][3] = x + w / 2.0f;
     m[1][3] = y + h / 2.0f;
@@ -45,24 +45,57 @@ Matrix gl::viewport(int x, int y, int w, int h) {
     return m;
 }
 
-Matrix gl::projection(float dist) {
+Matrix gl::set_projection(float dist) {
     Matrix m = Matrix::identity();
     m[3][2] = -1.0f / dist;
     return m;
 }
 
-Vec3f gl::barycentric(Vec2f* tr, Vec2f p) {
+Vec3f gl::barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p) {
     Vec3f s[2];
     for (size_t i = 0; i < 2; ++i) {
-        s[i][0] = tr[1][i] - tr[0][i];
-        s[i][1] = tr[2][i] - tr[0][i];
-        s[i][2] = tr[0][i] - p[i];
+        s[i][0] = b[i] - a[i];
+        s[i][1] = c[i] - a[i];
+        s[i][2] = a[i] - p[i];
     }
     Vec3f u = s[0] ^ s[1];
     if (std::abs(u.z) > 1e-2) {
         return Vec3f(u.z - u.x - u.y, u.x, u.y) / float(u.z);
     }
     return Vec3f(-1, -1, -1);
+}
+
+void gl::triangle(Matr<4, 3, float> &clipc, IShader &shader, QImage &image, float *zbuffer) {
+    Matr<3, 4, float> pts = (viewport * clipc).transpose(); // transposed to ease access to each of the points
+    Matr<3, 2, float> pts2;
+    for (int i = 0; i < 3; i++) pts2[i] = proj<2>(pts[i]);
+
+    Vec2f bbmin(image.width() - 1, image.height() - 1), bbmax(0, 0);
+    Vec2f thresh = bbmin;
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = 0; j < 2; ++j) {
+            bbmin[j] = std::max(0.0f, std::min(bbmin[j], pts2[i][j]));
+            bbmax[j] = std::min(thresh[j], std::max(bbmax[j], pts2[i][j]));
+        }
+    }
+    Vec2i p;
+    QRgb color;
+    for (p.x = bbmin.x; p.x <= bbmax.x; ++p.x) {
+        for (p.y = bbmin.y; p.y <= bbmax.y; ++p.y) {
+            Vec3f bc_screen  = barycentric(pts2[0], pts2[1], pts2[2], p);
+            Vec3f bc_clip    = Vec3f(bc_screen.x/pts[0][3], bc_screen.y/pts[1][3], bc_screen.z/pts[2][3]);
+            bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
+            float frag_depth = clipc[2] * bc_clip;
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[p.x + p.y * image.width()] > frag_depth) {
+                continue;
+            }
+            bool discard = shader.fragment(bc_clip, color);
+            if (!discard) {
+                zbuffer[p.x + p.y * image.width()] = frag_depth;
+                image.setPixel(QPoint(p.x, p.y), color);
+            }
+        }
+    }
 }
 
 QImage gl::diff(const QImage &img1, const QImage &img2) {

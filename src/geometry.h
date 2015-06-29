@@ -268,6 +268,16 @@ public:
         T det = res[0] * data[0];
         return res / det;
     }
+
+    Matr<COLS, ROWS, T> transpose() const {
+        Matr<COLS, ROWS, T> res;
+        for (size_t i = COLS; i--; res[i] = this->col(i));
+        return res;
+    }
+
+    Matr<ROWS, COLS, T> invert() const {
+        return invertTranspose().transpose();
+    }
 };
 
 

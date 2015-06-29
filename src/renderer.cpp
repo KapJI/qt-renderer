@@ -34,8 +34,8 @@ QImage Renderer::render() {
     light_dir.normalize();
 
     Matrix modelview = gl::lookat(eye, center, Vec3f(0, 1, 0));
-    Matrix projection = gl::projection((center - eye).len());
-    Matrix viewport = gl::viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
+    Matrix projection = gl::set_projection((center - eye).len());
+    Matrix viewport = gl::set_viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
 
     transform = viewport * projection * modelview;
     transform_inv = (projection * gl::rotate(eye, center, Vec3f(0, 1, 0))).invertTranspose();
@@ -76,8 +76,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
     Vec3i p;
     for (p.x = bbmin.x; p.x <= bbmax.x; ++p.x) {
         for (p.y = bbmin.y; p.y <= bbmax.y; ++p.y) {
-            Vec2f coords2[3] = {Vec2f(coords[0].x, coords[0].y), Vec2f(coords[1].x, coords[1].y), Vec2f(coords[2].x, coords[2].y)};
-            Vec3f bar = gl::barycentric(coords2, Vec2f(p.x, p.y));
+            Vec3f bar = gl::barycentric(Vec2f(coords[0].x, coords[0].y), Vec2f(coords[1].x, coords[1].y), Vec2f(coords[2].x, coords[2].y), Vec2f(p.x, p.y));
             if (bar.x < 0 || bar.y < 0 || bar.z < 0) {
                 continue;
             }
