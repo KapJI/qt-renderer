@@ -76,12 +76,8 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
     Vec3i p;
     for (p.x = bbmin.x; p.x <= bbmax.x; ++p.x) {
         for (p.y = bbmin.y; p.y <= bbmax.y; ++p.y) {
-            Vec3i u = Vec3i(coords[1].x - coords[0].x, coords[2].x - coords[0].x, coords[0].x - p.x)
-                    ^ Vec3i(coords[1].y - coords[0].y, coords[2].y - coords[0].y, coords[0].y - p.y);
-            if (u.z == 0) {
-                continue;
-            }
-            Vec3f bar = Vec3f(u.z - u.x - u.y, u.x, u.y) / float(u.z);
+            Vec2f coords2[3] = {Vec2f(coords[0].x, coords[0].y), Vec2f(coords[1].x, coords[1].y), Vec2f(coords[2].x, coords[2].y)};
+            Vec3f bar = gl::barycentric(coords2, Vec2f(p.x, p.y));
             if (bar.x < 0 || bar.y < 0 || bar.z < 0) {
                 continue;
             }
@@ -98,7 +94,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             p.z = z;
 
             Vec3f normal = (transform_inv * cur_model->normal(t_coord)).normalize();
-            float intensity = std::max(0.0f, normal * light_view);
+            float intensity = std::min(1.0f, std::max(0.0f, normal * light_view) / 0.9f + 0.1f);
             QRgb color = cur_model->texture(t_coord);
             QRgb pixel_color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
             if (approx_normal * Vec3f(0, 0, 1) < 0) {

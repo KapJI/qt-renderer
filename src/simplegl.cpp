@@ -51,6 +51,20 @@ Matrix gl::projection(float dist) {
     return m;
 }
 
+Vec3f gl::barycentric(Vec2f* tr, Vec2f p) {
+    Vec3f s[2];
+    for (size_t i = 0; i < 2; ++i) {
+        s[i][0] = tr[1][i] - tr[0][i];
+        s[i][1] = tr[2][i] - tr[0][i];
+        s[i][2] = tr[0][i] - p[i];
+    }
+    Vec3f u = s[0] ^ s[1];
+    if (std::abs(u.z) > 1e-2) {
+        return Vec3f(u.z - u.x - u.y, u.x, u.y) / float(u.z);
+    }
+    return Vec3f(-1, -1, -1);
+}
+
 QImage gl::diff(const QImage &img1, const QImage &img2) {
     assert(img1.width() == img2.width());
     assert(img1.height() == img2.height());

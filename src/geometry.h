@@ -40,6 +40,9 @@ public:
 
     Vec(T x, T y): x(x), y(y) {}
 
+    template<typename U>
+    Vec(const Vec<2, U> &v): x(v.x), y(v.y) {}
+
     T& operator[](size_t i) {
         assert(i < 2);
         return i == 0 ? x : y;
