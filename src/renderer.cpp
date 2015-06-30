@@ -10,16 +10,26 @@
 
 #include "renderer.h"
 
-#define DEPTH 1000
-#define INF 1e9
-#define EPS 1e-6
-
-Vec3i Shader::vertex(int iface, int nthvert) {
-    return Vec3i(1, 1, 1);
+Vec4f Shader::vertex(int iface, int nthvert) {
+    Vec4f vertex = gl::projection * gl::modelview * embed<4>(parent->model->vertex(iface, nthvert));
+    varying_tri.setCol(nthvert, vertex);
+    varying_uv.setCol(nthvert, parent->model->uv(iface, nthvert));
+    varying_norm.setCol(nthvert, parent->model->normal(iface, nthvert));
+    return vertex;
 }
 
 bool Shader::fragment(Vec3f bar, QRgb &color) {
-    return true;
+    Vec3f normal_approx = (uniform_m_inv * (varying_norm * bar)).normalize();
+    if (normal_approx * Vec3f(0, 0, 1) < 0) {
+        return true;
+    }
+    Vec2f uv = varying_uv * bar;
+    Vec3f normal = (uniform_m_inv * parent->model->normalMap(uv)).normalize();
+    Vec3f light = (gl::modelview * parent->light_dir + parent->center).normalize();
+    float intensity = std::min(1.0f, std::max(0.0f, normal * light) / 0.9f + 0.1f);
+    color = parent->model->texture(uv);
+    color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
+    return false;
 }
 
 Renderer::Renderer(const QVector<QString> &model_filenames, int width, int height, QWidget* parent)
@@ -28,7 +38,7 @@ Renderer::Renderer(const QVector<QString> &model_filenames, int width, int heigh
         models.push_back(new Model(model_filenames[i].toStdString()));
     }
     frame = QImage(width, height, QImage::Format_RGB32);
-    zbuffer = new int[width * height];
+    zbuffer = new float[width * height];
     light_dir = Vec3f(0, 0, 1);
     eye = Vec3f(0, 0, -3);
     center = Vec3f(0, 0, 0);
@@ -37,7 +47,7 @@ Renderer::Renderer(const QVector<QString> &model_filenames, int width, int heigh
 
 QImage Renderer::render() {
     frame.fill(Qt::black);
-    std::fill(zbuffer, zbuffer + width * height, -INF);
+    std::fill(zbuffer, zbuffer + width * height, -std::numeric_limits<float>::max());
 
     light_dir.normalize();
 
@@ -45,68 +55,19 @@ QImage Renderer::render() {
     gl::set_projection((center - eye).len());
     gl::set_viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
 
-    transform = gl::viewport * gl::projection * gl::modelview;
-    transform_inv = (gl::projection * gl::rotate(eye, center, Vec3f(0, 1, 0))).invertTranspose();
-
-    Vec3f view_light = (gl::modelview * light_dir + center).normalize();
+    Shader shader(this);
+    shader.uniform_m = gl::projection * gl::modelview;
+    shader.uniform_m_inv = (gl::projection * gl::rotate(eye, center, up)).invertTranspose();
     for (int k = 0; k < models.size(); ++k) {
-        cur_model = models[k];
-        for (int i = 0; i < cur_model->nfaces(); i++) {
-            Vec3i screen_coords[3];
-            Vec2f texture_coords[3];
-            Vec3f normal_coords[3];
-            for (int j = 0; j < 3; ++j) {
-                screen_coords[j] = transform * cur_model->vertex(i, j);
-                Vec3f uv = cur_model->uv(i, j);
-                texture_coords[j] = Vec2f(uv.x, uv.y);
-                normal_coords[j] = (transform_inv * cur_model->normal(i, j)).normalize();
+        model = models[k];
+        for (size_t i = 0; i < model->nfaces(); i++) {
+            for (size_t j = 0; j < 3; ++j) {
+                shader.vertex(i, j);
             }
-            triangle(screen_coords, texture_coords, normal_coords, view_light);
+            gl::triangle(shader.varying_tri, shader, frame, zbuffer);
         }
     }
-    // Draw light source
-    // gl::setPixel(frame, zbuffer, gl::viewport * view_light, qRgb(255, 255, 0));
     return frame;
-}
-
-void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Vec3f &light_view) {
-    Vec2i bbmin(width - 1, height - 1), bbmax(0, 0);
-    Vec2i thresh = bbmin;
-    for (size_t i = 0; i < 3; ++i) {
-        for (size_t j = 0; j < 2; ++j) {
-            bbmin[j] = std::max(0, std::min(bbmin[j], coords[i][j]));
-            bbmax[j] = std::min(thresh[j], std::max(bbmax[j], coords[i][j]));
-        }
-    }
-    Vec3i p;
-    for (p.x = bbmin.x; p.x <= bbmax.x; ++p.x) {
-        for (p.y = bbmin.y; p.y <= bbmax.y; ++p.y) {
-            Vec3f bar = gl::barycentric(Vec2f(coords[0].x, coords[0].y), Vec2f(coords[1].x, coords[1].y), Vec2f(coords[2].x, coords[2].y), Vec2f(p.x, p.y));
-            if (bar.x < 0 || bar.y < 0 || bar.z < 0) {
-                continue;
-            }
-            float z = 0;
-            Vec2f t_coord;
-            Vec3f approx_normal;
-            for (int i = 0; i < 3; ++i) {
-                assert(0 <= bar[i] && bar[i] <= 1);
-                z += coords[i].z * bar[i];
-                t_coord += t_coords[i] * bar[i];
-                approx_normal += normals[i] * bar[i];
-            }
-            approx_normal.normalize();
-            p.z = z;
-
-            Vec3f normal = (transform_inv * cur_model->normalMap(t_coord)).normalize();
-            float intensity = std::min(1.0f, std::max(0.0f, normal * light_view) / 0.9f + 0.1f);
-            QRgb color = cur_model->texture(t_coord);
-            QRgb pixel_color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
-            if (approx_normal * Vec3f(0, 0, 1) < 0) {
-                pixel_color = qRgb(0, 0, 0);
-            }
-            gl::setPixel(frame, zbuffer, p, pixel_color);
-        }
-    }
 }
 
 void Renderer::moveLight(QObject* o) {

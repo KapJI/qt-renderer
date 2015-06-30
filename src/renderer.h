@@ -14,8 +14,13 @@ class Renderer;
 
 class Shader: public IShader {
 public:
+    Matr<4, 3, float> varying_tri;
+    Matr<2, 3, float> varying_uv;
+    Matr<3, 3, float> varying_norm;
+    Matrix uniform_m, uniform_m_inv;
+
     Shader(Renderer* parent): parent(parent) {}
-    virtual Vec3i vertex(int iface, int nthvert);
+    virtual Vec4f vertex(int iface, int nthvert);
     virtual bool fragment(Vec3f bar, QRgb &color);
 private:
     Renderer* parent;
@@ -31,15 +36,12 @@ public:
     void moveCenter(const QPoint &v);
 public slots:
     void moveLight(QObject* v);
-protected:
-    void triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Vec3f &view_light);
 private:
     QWidget* parent;
     QImage frame;
     QVector<Model*> models;
-    Model* cur_model;
+    Model* model;
     int width, height;
-    int* zbuffer;
+    float* zbuffer;
     Vec3f light_dir, eye, center, up;
-    Matrix transform, transform_inv;
 };

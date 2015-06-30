@@ -9,13 +9,6 @@ Matrix gl::viewport;
 Matrix gl::projection;
 Matrix gl::modelview;
 
-void gl::setPixel(QImage& img, int* zbuffer, Vec3i p, const QRgb &color) {
-    if (0 <= p.x && p.x < img.width() && 0 <= p.y && p.y < img.height() && zbuffer[p.x + p.y * img.width()] < p.z) {
-        zbuffer[p.x + p.y * img.width()] = p.z;
-        img.setPixel(QPoint(p.x, p.y), color);
-    }
-}
-
 Matrix gl::rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     Vec3f z = (center - eye).normalize();
     Vec3f x = (up ^ z).normalize();
@@ -87,7 +80,9 @@ void gl::triangle(Matr<4, 3, float> &clip_coords, IShader &shader, QImage &image
             Vec3f bc_screen = barycentric(screen_coords[0], screen_coords[1], screen_coords[2], p);
             Vec3f bc_clip = Vec3f(bc_screen.x / pts[0][3], bc_screen.y / pts[1][3], bc_screen.z / pts[2][3]);
             bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
-            float frag_depth = clip_coords[2] * bc_clip;
+            // Need to divide by clip_coords[3]
+            float frag_depth = bc_clip * Vec3f(clip_coords[2][0] / clip_coords[3][0], clip_coords[2][1] / clip_coords[3][1], clip_coords[2][2] / clip_coords[3][2]);
+            // float frag_depth = clip_coords[2] * bc_clip;
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[p.x + p.y * image.width()] > frag_depth) {
                 continue;
             }

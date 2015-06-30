@@ -338,4 +338,5 @@ using Vec2i = Vec<2, int>;
 using Vec2f = Vec<2, float>;
 using Vec3i = Vec<3, int>;
 using Vec3f = Vec<3, float>;
+using Vec4f = Vec<4, float>;
 using Matrix = Matr<4, 4, float>;

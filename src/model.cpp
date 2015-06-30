@@ -38,8 +38,8 @@ Model::Model(const std::string &filename) {
             norms.push_back(vn);
         } else if (line.substr(0, 3) == "vt ") {
             iss >> trash;
-            Vec3f vt;
-            for (int i = 0; i < 3; ++i) {
+            Vec2f vt;
+            for (int i = 0; i < 2; ++i) {
                 iss >> vt[i];
             }
             uvs.push_back(vt);
@@ -77,12 +77,12 @@ Model::Model(const std::string &filename) {
 Model::~Model() {
 }
 
-int Model::nverts() const {
-    return (int)verts.size();
+size_t Model::nverts() const {
+    return verts.size();
 }
 
-int Model::nfaces() const {
-    return (int)v_faces.size();
+size_t Model::nfaces() const {
+    return v_faces.size();
 }
 
 Vec3f Model::vertex(int face, int vert) const {
@@ -97,7 +97,7 @@ Vec3f Model::normal(int face, int vert) const {
     return norms[vn_faces[face][vert]];
 }
 
-Vec3f Model::uv(int face, int vert) const {
+Vec2f Model::uv(int face, int vert) const {
     assert(0 <= face && face < v_faces.size());
     assert(0 <= vert && vert < 3);
     return uvs[vt_faces[face][vert]];
