@@ -21,14 +21,21 @@ Vec4f Shader::vertex(int iface, int nthvert) {
 bool Shader::fragment(Vec3f bar, QRgb &color) {
     Vec3f normal_approx = (uniform_m_inv * (varying_norm * bar)).normalize();
     if (normal_approx * Vec3f(0, 0, 1) < 0) {
-        return true;
+        color = qRgb(0, 0, 0);
+        return false;
     }
     Vec2f uv = varying_uv * bar;
     Vec3f normal = (uniform_m_inv * parent->model->normalMap(uv)).normalize();
     Vec3f light = (gl::modelview * parent->light_dir + parent->center).normalize();
-    float intensity = std::min(1.0f, std::max(0.0f, normal * light) / 0.9f + 0.1f);
+    Vec3f reflect = ((2.0f * normal * light) * normal - light).normalize();
+    float spec = pow(std::max(0.0f, reflect.z), parent->model->specular(uv));
+    float intensity = std::max(0.0f, normal * light);
     color = parent->model->texture(uv);
-    color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);
+    int rgb[3] = {qRed(color), qGreen(color), qBlue(color)};
+    for (size_t i = 0; i < 3; ++i) {
+        rgb[i] = std::min<int>(255, 5 + rgb[i] * (intensity + 0.6 * spec));
+    }
+    color = qRgb(rgb[0], rgb[1], rgb[2]);
     return false;
 }
 

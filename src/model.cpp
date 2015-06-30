@@ -11,7 +11,7 @@
 Model::Model(const std::string &filename) {
     diffuse = Image::readFile((filename + "_diffuse.tga").c_str());
     normal_map = Image::readFile((filename + "_nm.tga").c_str());
-
+    spec = Image::readFile((filename + "_spec.tga").c_str());
     std::ifstream in(filename + ".obj");
     if (in.fail()) {
         std::cerr << "Cannot read file " << filename << std::endl;
@@ -103,12 +103,16 @@ Vec2f Model::uv(int face, int vert) const {
     return uvs[vt_faces[face][vert]];
 }
 
-QRgb Model::texture(const Vec2f &c) const {
-    return diffuse.pixel(diffuse.width() * c.x, diffuse.height() * (1.0f - c.y));
+QRgb Model::texture(const Vec2f &uv) const {
+    return diffuse.pixel(diffuse.width() * uv.x, diffuse.height() * (1.0f - uv.y));
 }
 
-Vec3f Model::normalMap(const Vec2f &c) const {
-    QRgb color = normal_map.pixel(normal_map.width() * c.x, normal_map.height() * (1.0f - c.y));
+Vec3f Model::normalMap(const Vec2f &uv) const {
+    QRgb color = normal_map.pixel(normal_map.width() * uv.x, normal_map.height() * (1.0f - uv.y));
     Vec3f res(qRed(color) - 128, qGreen(color) - 128, qBlue(color) - 128);
     return res.normalize();
+}
+
+float Model::specular(const Vec2f &uv) const {
+    return qRed(spec.pixel(spec.width() * uv.x, spec.height() * (1.0f - uv.y)));
 }
