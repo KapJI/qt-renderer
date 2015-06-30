@@ -8,12 +8,19 @@
 #include <algorithm>
 #include <iostream>
 
-#include "simplegl.h"
 #include "renderer.h"
 
 #define DEPTH 1000
 #define INF 1e9
 #define EPS 1e-6
+
+Vec3i Shader::vertex(int iface, int nthvert) {
+    return Vec3i(1, 1, 1);
+}
+
+bool Shader::fragment(Vec3f bar, QRgb &color) {
+    return true;
+}
 
 Renderer::Renderer(const QVector<QString> &model_filenames, int width, int height, QWidget* parent)
         : parent(parent), width(width), height(height) {
@@ -45,17 +52,14 @@ QImage Renderer::render() {
     for (int k = 0; k < models.size(); ++k) {
         cur_model = models[k];
         for (int i = 0; i < cur_model->nfaces(); i++) {
-            std::vector<Vec3f> face = cur_model->face(i), texture_face = cur_model->textureFace(i), normals = cur_model->normals(i);
-            assert(face.size() == 3);
             Vec3i screen_coords[3];
-            for (int j = 0; j < 3; ++j) {
-                screen_coords[j] = transform * face[j];
-            }
             Vec2f texture_coords[3];
             Vec3f normal_coords[3];
             for (int j = 0; j < 3; ++j) {
-                texture_coords[j] = Vec2f(texture_face[j].x, texture_face[j].y);
-                normal_coords[j] = (transform_inv * normals[j]).normalize();
+                screen_coords[j] = transform * cur_model->vertex(i, j);
+                Vec3f uv = cur_model->uv(i, j);
+                texture_coords[j] = Vec2f(uv.x, uv.y);
+                normal_coords[j] = (transform_inv * cur_model->normal(i, j)).normalize();
             }
             triangle(screen_coords, texture_coords, normal_coords, view_light);
         }
@@ -93,7 +97,7 @@ void Renderer::triangle(Vec3i* coords, Vec2f* t_coords, Vec3f* normals, const Ve
             approx_normal.normalize();
             p.z = z;
 
-            Vec3f normal = (transform_inv * cur_model->normal(t_coord)).normalize();
+            Vec3f normal = (transform_inv * cur_model->normalMap(t_coord)).normalize();
             float intensity = std::min(1.0f, std::max(0.0f, normal * light_view) / 0.9f + 0.1f);
             QRgb color = cur_model->texture(t_coord);
             QRgb pixel_color = qRgb(qRed(color) * intensity, qGreen(color) * intensity, qBlue(color) * intensity);

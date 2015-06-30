@@ -2,7 +2,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <vector>
 #include <cstdlib>
 #include <cassert>
 
@@ -43,9 +42,9 @@ Model::Model(const std::string &filename) {
             for (int i = 0; i < 3; ++i) {
                 iss >> vt[i];
             }
-            t_verts.push_back(vt);
+            uvs.push_back(vt);
         } else if (line.substr(0, 2) == "f ") {
-            std::vector<int> vs, vts, vns;
+            QVector<int> vs, vts, vns;
             int idx;
             iss >> trash;
             std::string fdesc;
@@ -86,40 +85,30 @@ int Model::nfaces() const {
     return (int)v_faces.size();
 }
 
-std::vector<Vec3f> Model::face(int idx) const {
-    std::vector<Vec3f> res;
-    for (auto v : v_faces[idx]) {
-        res.push_back(verts[v]);
-    }
-    return res;
+Vec3f Model::vertex(int face, int vert) const {
+    assert(0 <= face && face < v_faces.size());
+    assert(0 <= vert && vert < 3);
+    return verts[v_faces[face][vert]];
 }
 
-std::vector<Vec3f> Model::normals(int idx) const {
-    std::vector<Vec3f> res;
-    for (auto v : vn_faces[idx]) {
-        res.push_back(norms[v]);
-    }
-    return res;
+Vec3f Model::normal(int face, int vert) const {
+    assert(0 <= face && face < v_faces.size());
+    assert(0 <= vert && vert < 3);
+    return norms[vn_faces[face][vert]];
 }
 
-std::vector<Vec3f> Model::textureFace(int idx) const {
-    std::vector<Vec3f> res;
-    for (auto v : vt_faces[idx]) {
-        res.push_back(t_verts[v]);
-    }
-    return res;
+Vec3f Model::uv(int face, int vert) const {
+    assert(0 <= face && face < v_faces.size());
+    assert(0 <= vert && vert < 3);
+    return uvs[vt_faces[face][vert]];
 }
 
 QRgb Model::texture(const Vec2f &c) const {
     return diffuse.pixel(diffuse.width() * c.x, diffuse.height() * (1.0f - c.y));
 }
 
-Vec3f Model::normal(const Vec2f &c) const {
+Vec3f Model::normalMap(const Vec2f &c) const {
     QRgb color = normal_map.pixel(normal_map.width() * c.x, normal_map.height() * (1.0f - c.y));
     Vec3f res(qRed(color) - 128, qGreen(color) - 128, qBlue(color) - 128);
     return res.normalize();
-}
-
-Vec3f Model::vert(int i) const {
-    return verts[i];
 }

@@ -4,8 +4,9 @@
 
 #include "geometry.h"
 
-struct IShader {
-    virtual ~IShader();
+class IShader {
+public:
+	virtual ~IShader() {};
     virtual Vec3i vertex(int iface, int nthvert) = 0;
     virtual bool fragment(Vec3f bar, QRgb &color) = 0;
 };

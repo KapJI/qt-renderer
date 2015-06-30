@@ -8,9 +8,22 @@
 
 #include "geometry.h"
 #include "model.h"
+#include "simplegl.h"
+
+class Renderer;
+
+class Shader: public IShader {
+public:
+    Shader(Renderer* parent): parent(parent) {}
+    virtual Vec3i vertex(int iface, int nthvert);
+    virtual bool fragment(Vec3f bar, QRgb &color);
+private:
+    Renderer* parent;
+};
 
 class Renderer: public QObject {
     Q_OBJECT
+    friend class Shader;
 public:
     Renderer(const QVector<QString> &model_filenames, int width, int height, QWidget* parent);
     QImage render();
