@@ -14,7 +14,7 @@ class Renderer;
 
 class Shader: public IShader {
 public:
-    Matr<4, 3, float> varying_tri;
+    Matr<4, 3, float> varying_clip;
     Matr<2, 3, float> varying_uv;
     Matr<3, 3, float> varying_norm;
     Matrix uniform_m, uniform_m_inv;

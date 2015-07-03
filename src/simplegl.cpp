@@ -10,7 +10,7 @@ Matrix gl::projection;
 Matrix gl::modelview;
 
 Matrix gl::rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
-    Vec3f z = (center - eye).normalize();
+    Vec3f z = (eye - center).normalize();
     Vec3f x = (up ^ z).normalize();
     Vec3f y = (z ^ x).normalize();
     Matrix res = Matrix::identity();

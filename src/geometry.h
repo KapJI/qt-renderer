@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <iomanip>
 
 template<size_t DIM, typename T>
 class Vec {
@@ -171,6 +172,7 @@ template<size_t LEN, size_t DIM, typename T> Vec<LEN, T> proj(const Vec<DIM, T> 
 
 template<size_t DIM, typename T>
 std::ostream& operator<<(std::ostream& s, const Vec<DIM, T>& v) {
+    s << std::fixed << std::setprecision(3);
     s << "(";
     for (size_t i = 0; i < DIM; ++i) {
         s << v[i];

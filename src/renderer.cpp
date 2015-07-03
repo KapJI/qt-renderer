@@ -12,7 +12,7 @@
 
 Vec4f Shader::vertex(int iface, int nthvert) {
     Vec4f vertex = gl::projection * gl::modelview * embed<4>(parent->model->vertex(iface, nthvert));
-    varying_tri.setCol(nthvert, vertex);
+    varying_clip.setCol(nthvert, vertex);
     varying_uv.setCol(nthvert, parent->model->uv(iface, nthvert));
     varying_norm.setCol(nthvert, parent->model->normal(iface, nthvert));
     return vertex;
@@ -26,14 +26,14 @@ bool Shader::fragment(Vec3f bar, QRgb &color) {
     }
     Vec2f uv = varying_uv * bar;
     Vec3f normal = (uniform_m_inv * parent->model->normalMap(uv)).normalize();
-    Vec3f light = (gl::modelview * parent->light_dir + parent->center).normalize();
+    Vec3f light = (gl::rotate(parent->eye, parent->center, parent->up) * parent->light_dir).normalize();
     Vec3f reflect = ((2.0f * normal * light) * normal - light).normalize();
     float spec = pow(std::max(0.0f, reflect.z), parent->model->specular(uv));
     float intensity = std::max(0.0f, normal * light);
     color = parent->model->texture(uv);
     int rgb[3] = {qRed(color), qGreen(color), qBlue(color)};
     for (size_t i = 0; i < 3; ++i) {
-        rgb[i] = std::min<int>(255, 5 + rgb[i] * (intensity + 0.6 * spec));
+        rgb[i] = std::min<int>(255, 5 + rgb[i] * (intensity + 0.4 * spec));
     }
     color = qRgb(rgb[0], rgb[1], rgb[2]);
     return false;
@@ -47,7 +47,7 @@ Renderer::Renderer(const QVector<QString> &model_filenames, int width, int heigh
     frame = QImage(width, height, QImage::Format_RGB32);
     zbuffer = new float[width * height];
     light_dir = Vec3f(0, 0, 1);
-    eye = Vec3f(0, 0, -3);
+    eye = Vec3f(0, 0, 3);
     center = Vec3f(0, 0, 0);
     up = Vec3f(0, 1, 0);
 }
@@ -60,7 +60,7 @@ QImage Renderer::render() {
 
     gl::lookat(eye, center, up);
     gl::set_projection((center - eye).len());
-    gl::set_viewport((width - height) / 2, height / 8, height * 3 / 4, height * 3 / 4);
+    gl::set_viewport((width - height) * 3 / 4, height / 8, height * 3 / 4, height * 3 / 4);
 
     Shader shader(this);
     shader.uniform_m = gl::projection * gl::modelview;
@@ -71,7 +71,7 @@ QImage Renderer::render() {
             for (size_t j = 0; j < 3; ++j) {
                 shader.vertex(i, j);
             }
-            gl::triangle(shader.varying_tri, shader, frame, zbuffer);
+            gl::triangle(shader.varying_clip, shader, frame, zbuffer);
         }
     }
     return frame;
@@ -99,13 +99,13 @@ void Renderer::moveLight(QObject* o) {
 
 void Renderer::moveEye(const QPoint &v) {
     float pi = acos(-1.0);
-    float step = pi / 36; // 5 degrees
+    float step = -pi / 36; // 5 degrees
 
     if (v.x() != 0) {
         eye = center + (eye - center).rotate(up, v.x() * step);
     }
     if (v.y() != 0) {
-        eye = center + (eye - center).rotate(up ^ (eye - center), v.y() * step);
+        eye = center (eye - center).rotate(up ^ (eye - center), v.y() * step);
     }
     parent->update();
 }
@@ -114,11 +114,11 @@ void Renderer::moveCenter(const QPoint &v) {
     float step = 0.1;
 
     Vec3f z = (eye - center).normalize();
-    Vec3f x = (z ^ up).normalize();
+    Vec3f x = (up ^ z).normalize();
     x = x * (step * v.x());
-    z = z * (step * v.y());
-    center += z + x;
-    eye += z + x;
+    z = z * (-1.0f * step * v.y());
+    center += x + z;
+    eye += x + z;
 
     parent->update();
 }
