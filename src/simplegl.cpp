@@ -3,11 +3,10 @@
 
 #include "simplegl.h"
 
-#define DEPTH 1000
-
 Matrix gl::viewport;
 Matrix gl::projection;
 Matrix gl::modelview;
+int const gl::DEPTH = 1000;
 
 Matrix gl::rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up) {
     Vec3f z = (eye - center).normalize();
@@ -41,9 +40,9 @@ void gl::set_viewport(int x, int y, int w, int h) {
     viewport[2][2] = DEPTH / 2.0f;
 }
 
-void gl::set_projection(float dist) {
+void gl::set_projection(float coeff) {
     projection = Matrix::identity();
-    projection[3][2] = -1.0f / dist;
+    projection[3][2] = coeff;
 }
 
 Vec3f gl::barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p) {
@@ -80,9 +79,7 @@ void gl::triangle(Matr<4, 3, float> &clip_coords, IShader &shader, QImage &image
             Vec3f bc_screen = barycentric(screen_coords[0], screen_coords[1], screen_coords[2], p);
             Vec3f bc_clip = Vec3f(bc_screen.x / pts[0][3], bc_screen.y / pts[1][3], bc_screen.z / pts[2][3]);
             bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
-            // Need to divide by clip_coords[3]
-            float frag_depth = bc_clip * Vec3f(clip_coords[2][0] / clip_coords[3][0], clip_coords[2][1] / clip_coords[3][1], clip_coords[2][2] / clip_coords[3][2]);
-            // float frag_depth = clip_coords[2] * bc_clip;
+            float frag_depth = bc_clip * Vec3f(pts[0][2] / pts[0][3], pts[1][2] / pts[1][3], pts[2][2] / pts[2][3]);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[p.x + p.y * image.width()] > frag_depth) {
                 continue;
             }

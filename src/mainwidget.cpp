@@ -45,7 +45,7 @@ MainWidget::MainWidget(MainWindow* parent): parent(parent) {
 }
 
 void MainWidget::paintEvent(QPaintEvent *event) {
-    QImage image = renderer->render();
+    QImage image = renderer->genFrame();
     if (!image.isNull()) {
         QPainter painter(this);
         painter.drawImage(QPoint(0, 0), image.mirrored());

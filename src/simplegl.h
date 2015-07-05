@@ -15,7 +15,7 @@ namespace gl {
     void lookat(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
     Matrix rotate(const Vec3f &eye, const Vec3f &center, const Vec3f &up);
     void set_viewport(int x, int y, int w, int h);
-    void set_projection(float dist);
+    void set_projection(float coeff);
     Vec3f barycentric(Vec2f a, Vec2f b, Vec2f c, Vec2f p);
     void triangle(Matr<4, 3, float> &clip_coords, IShader &shader, QImage &image, float* zbuffer);
 	QImage diff(const QImage &img1, const QImage &img2);
@@ -23,4 +23,5 @@ namespace gl {
 	extern Matrix viewport;
 	extern Matrix projection;
 	extern Matrix modelview;
+	extern int const DEPTH;
 }
