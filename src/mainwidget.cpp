@@ -37,9 +37,15 @@ MainWidget::MainWidget(MainWindow* parent): parent(parent) {
     setLayout(layout);
 
     QVector<QString> models;
-    models.push_back("models/african_head/african_head");
-    models.push_back("models/african_head/african_head_eye_inner");
-    // QString model_filename("models/diablo3/diablo3_pose");
+    QStringList args = QCoreApplication::arguments();
+    if (args.size() == 1) {
+        models.push_back("models/african_head/african_head.obj");
+        models.push_back("models/african_head/african_head_eye_inner.obj");
+    } else {
+        for (int i = 1; i < args.size(); ++i) {
+            models.push_back(args.at(i));
+        }
+    }
     renderer = new Renderer(models, parent->width(), parent->height(), this);
     connect(mapper, SIGNAL(mapped(QObject*)), renderer, SLOT(moveLight(QObject*)));
 }

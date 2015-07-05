@@ -35,29 +35,33 @@ Vec4f Shader::vertex(int iface, int nthvert) {
     Vec4f vertex = uniform_m * embed<4>(parent->model->vertex(iface, nthvert));
     varying_clip.setCol(nthvert, vertex);
     varying_uv.setCol(nthvert, parent->model->uv(iface, nthvert));
-    varying_norm.setCol(nthvert, parent->model->normal(iface, nthvert));
+    varying_norm.setCol(nthvert, uniform_m_inv * parent->model->normal(iface, nthvert));
     return vertex;
 }
 
 bool Shader::fragment(Vec3f bar, QRgb &color) {
-    Vec3f normal_approx = (uniform_m_inv * (varying_norm * bar)).normalize();
+    Vec3f normal_approx = (varying_norm * bar).normalize();
     if (normal_approx * Vec3f(0, 0, 1) < 0) {
         color = qRgb(0, 0, 0);
         return false;
     }
-    Vec3f shadow_pt = proj<3>(uniform_m_shadow * varying_clip * bar);
-    /* Magic const to prevent z-fighting */
-    float shadow = 0.3f + 0.7f * (parent->shadowbuffer[(int)shadow_pt.x + (int)shadow_pt.y * parent->width] < shadow_pt.z + 30.13);
     Vec2f uv = varying_uv * bar;
     Vec3f normal = (uniform_m_inv * parent->model->normalMap(uv)).normalize();
     Vec3f light = (gl::rotate(parent->eye, parent->center, parent->up) * parent->light_dir).normalize();
+    
     Vec3f reflect = ((2.0f * normal * light) * normal - light).normalize();
-    float spec = pow(std::max(0.0f, reflect.z), parent->model->specular(uv));
+    float spec = pow(std::max(0.0f, reflect.z), parent->model->specular(uv) + 1);
+    
     float intensity = std::max(0.0f, normal * light);
+
+    Vec3f shadow_pt = proj<3>(uniform_m_shadow * varying_clip * bar);
+    /* Magic const to prevent z-fighting */
+    float shadow = 0.3f + 0.7f * (parent->shadowbuffer[(int)shadow_pt.x + (int)shadow_pt.y * parent->width] < shadow_pt.z + 42.34);
+    
     color = parent->model->texture(uv);
     int rgb[3] = {qRed(color), qGreen(color), qBlue(color)};
     for (size_t i = 0; i < 3; ++i) {
-        rgb[i] = std::min<int>(255, 5 + rgb[i] * shadow * (intensity + 0.4 * spec));
+        rgb[i] = std::min<int>(255, 5 + rgb[i] * shadow * (intensity + 0.6 * spec));
     }
     color = qRgb(rgb[0], rgb[1], rgb[2]);
     return false;

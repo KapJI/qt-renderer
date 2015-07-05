@@ -9,10 +9,11 @@
 #include "model.h"
 
 Model::Model(const std::string &filename) {
-    diffuse = Image::readFile((filename + "_diffuse.tga").c_str());
-    normal_map = Image::readFile((filename + "_nm.tga").c_str());
-    spec = Image::readFile((filename + "_spec.tga").c_str());
-    std::ifstream in(filename + ".obj");
+    std::string file = filename.substr(0, filename.find_last_of("."));
+    diffuse = Image::readFile((file + "_diffuse.tga").c_str());
+    normal_map = Image::readFile((file + "_nm.tga").c_str());
+    spec = Image::readFile((file + "_spec.tga").c_str());
+    std::ifstream in(filename);
     if (in.fail()) {
         std::cerr << "Cannot read file " << filename << std::endl;
         return;
